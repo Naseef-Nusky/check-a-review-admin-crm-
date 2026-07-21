@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { REVIEW_STATUS } from '../utils/constants'
 import { formatDate } from '../utils/format'
+import StarRating from '../components/StarRating'
 
 const statusColors = {
   [REVIEW_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
@@ -74,7 +75,9 @@ export default function ReviewsPage() {
                 <tr key={review.id} className="border-b border-gray-100">
                   <td className="px-4 py-3 font-medium">{review.business_name}</td>
                   <td className="px-4 py-3">{review.author_name}</td>
-                  <td className="px-4 py-3 tabular-nums">{review.rating}</td>
+                  <td className="px-4 py-3">
+                    <StarRating rating={review.rating} size="sm" />
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[review.status] || 'bg-gray-100 text-gray-800'}`}>
                       {review.status}

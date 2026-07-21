@@ -43,7 +43,7 @@
   }
 
   .label-text {
-    @apply mb-1.5 block text-sm font-medium text-slate-300;
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
   }
 
   .sidebar-link {
@@ -96,5 +96,12 @@
     background-image:
       radial-gradient(circle at top left, rgb(255 64 129 / 0.28), transparent 30%),
       linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  }
+
+  .admin-shell {
+    background:
+      radial-gradient(circle at top left, rgb(255 64 129 / 0.08), transparent 24%),
+      radial-gradient(circle at 85% 10%, rgb(255 158 187 / 0.08), transparent 20%),
+      linear-gradient(180deg, #f8fafc 0%, #fdf2f8 100%);
   }
 }

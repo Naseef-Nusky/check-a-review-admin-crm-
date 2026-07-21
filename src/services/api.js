@@ -34,12 +34,24 @@ export const api = {
   post: (endpoint, data) => request(endpoint, { method: 'POST', body: JSON.stringify(data) }),
   put: (endpoint, data) => request(endpoint, { method: 'PUT', body: JSON.stringify(data) }),
   patch: (endpoint, data) => request(endpoint, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
 }
 
 export const adminApi = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: () => api.get('/admin/users'),
   getBusinesses: () => api.get('/admin/businesses'),
+  getBusinessCategories: () => api.get('/admin/categories'),
+  createMainCategory: (name) => api.post('/admin/categories/main', { name }),
+  createSubCategory: (mainCategoryId, name) =>
+    api.post('/admin/categories/sub', { mainCategoryId, name }),
+  updateMainCategory: (id, name) => api.patch(`/admin/categories/main/${id}`, { name }),
+  updateSubCategory: (id, data) => api.patch(`/admin/categories/sub/${id}`, data),
+  deleteMainCategory: (id) => api.delete(`/admin/categories/main/${id}`),
+  deleteSubCategory: (id) => api.delete(`/admin/categories/sub/${id}`),
+  seedCategories: () => api.post('/admin/categories/seed'),
+  createCategory: (name) => api.post('/admin/categories/main', { name }),
+  createBusiness: (data) => api.post('/admin/businesses', data),
   getReviews: () => api.get('/admin/reviews'),
   getFlaggedReviews: () => api.get('/admin/reviews/flagged'),
   moderateReview: (id, status) => api.patch(`/admin/reviews/${id}/moderate`, { status }),

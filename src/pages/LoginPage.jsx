@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { LockKeyhole } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { adminApi, ApiError } from '../services/api'
 import Button from '../components/Button'
@@ -35,47 +36,78 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="auth-panel hidden flex-col justify-between p-10 text-white lg:flex">
-        <img src="/logo-check-a-review.png" alt="Check A Review" className="h-10 w-auto object-contain" />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-200">Admin CRM</p>
-          <h1 className="mt-4 max-w-md text-4xl font-semibold tracking-tight">
-            Operate the platform with clarity and control.
-          </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-300">
-            Monitor users, moderate reviews, manage subscriptions, and configure platform settings from one professional workspace.
-          </p>
-        </div>
-        <p className="text-xs text-slate-400">Secure admin access only</p>
-      </div>
-
-      <div className="flex items-center justify-center px-4 py-12 sm:px-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
-            <img src="/logo-check-a-review.png" alt="Check A Review" className="h-10 w-auto object-contain" />
+    <div className="flex min-h-screen flex-col bg-slate-950">
+      <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
+        <div className="w-full max-w-md text-center">
+          <div className="mx-auto inline-flex rounded-2xl bg-slate-900 p-3 ring-1 ring-white/10">
+            <img
+              src="/logo-check-a-review.png"
+              alt="Check A Review"
+              className="h-10 w-auto object-contain sm:h-11"
+            />
           </div>
-          <h2 className="text-3xl font-semibold tracking-tight text-ink">Sign in</h2>
-          <p className="mt-2 text-sm text-ink-muted">Use your administrator credentials to continue.</p>
 
-          <form onSubmit={handleSubmit} className="card mt-8 space-y-5 p-6 sm:p-8">
-            {error && (
-              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-            )}
-            <div>
-              <label htmlFor="email" className="label-text text-slate-700">Email</label>
-              <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" />
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm sm:p-8">
+            <div className="mb-6 flex items-center gap-3">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                <LockKeyhole className="h-5 w-5" strokeWidth={1.5} />
+              </span>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900">Admin sign in</h1>
+                <p className="text-sm text-slate-500">Use your administrator credentials</p>
+              </div>
             </div>
-            <div>
-              <label htmlFor="password" className="label-text text-slate-700">Password</label>
-              <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field"
+                  placeholder="admin@checkareview.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <Button type="submit" className="w-full rounded-full" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign in to admin'}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
+              Authorized administrators only.
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   Building2,
+  FolderTree,
   CreditCard,
   LayoutDashboard,
   LogOut,
@@ -18,6 +19,7 @@ const sidebarLinks = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/users', label: 'Customers', icon: Users },
   { to: '/businesses', label: 'Businesses', icon: Building2 },
+  { to: '/categories', label: 'Categories', icon: FolderTree },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
   { to: '/flagged', label: 'AI Flagged', icon: AlertTriangle },
   { to: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
@@ -35,12 +37,22 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-muted">
+    <div className="admin-shell min-h-screen bg-surface-muted">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
         <aside className="hidden w-72 shrink-0 border-r border-border bg-white lg:flex lg:flex-col">
-          <div className="border-b border-border bg-slate-950 px-6 py-5">
-            <img src="/logo-check-a-review.png" alt="Check A Review" className="h-8 w-auto object-contain" />
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
+          <div
+            className="relative border-b border-border bg-slate-950 px-6 py-5"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 20% 0%, rgba(255, 64, 129, 0.35), transparent 45%), linear-gradient(180deg, #0f172a 0%, #111827 100%)',
+            }}
+          >
+            <div className="relative">
+              <div className="mx-auto inline-flex rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
+                <img src="/logo-check-a-review.png" alt="Check A Review" className="h-7 w-auto object-contain" />
+              </div>
+              <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
+            </div>
           </div>
           <nav className="flex-1 space-y-1 p-4">
             {sidebarLinks.map((link) => (
