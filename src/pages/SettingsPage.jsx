@@ -82,11 +82,14 @@ export default function SettingsPage() {
         </div>
         <div className="flex items-center gap-3">
           <input id="aiModeration" type="checkbox" checked={settings.aiModeration} onChange={(e) => setSettings({ ...settings, aiModeration: e.target.checked })} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-          <label htmlFor="aiModeration" className="text-sm font-medium text-slate-700">Enable AI Review Moderation</label>
+          <label htmlFor="aiModeration" className="text-sm font-medium text-slate-700">Enable AI review moderation</label>
         </div>
         <div>
-          <label htmlFor="autoPublishThreshold" className="label-text text-slate-700">Auto-Publish Trust Threshold (%)</label>
+          <label htmlFor="autoPublishThreshold" className="label-text text-slate-700">Auto-publish risk threshold (0–100)</label>
           <input id="autoPublishThreshold" type="number" min="0" max="100" value={settings.autoPublishThreshold} onChange={(e) => setSettings({ ...settings, autoPublishThreshold: e.target.value })} className="input-field" />
+          <p className="mt-1.5 text-xs text-slate-500">
+            Reviews with a risk score at or below this value can auto-publish when AI recommends publish. Lower = stricter.
+          </p>
         </div>
         <div>
           <label htmlFor="emailProvider" className="label-text text-slate-700">Email Provider</label>

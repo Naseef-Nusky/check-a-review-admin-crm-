@@ -286,7 +286,15 @@ export default function BusinessesPage() {
                   <td className="px-4 py-3">
                     <StarRating rating={biz.average_rating || 0} size="sm" showValue />
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{biz.review_count ?? 0}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    <Link
+                      to={`/businesses/${biz.id}?tab=reviews`}
+                      className="font-medium text-primary-600 hover:underline"
+                      title="View reviews"
+                    >
+                      {biz.review_count ?? 0}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium capitalize text-primary-800">
                       {biz.plan || 'free'}

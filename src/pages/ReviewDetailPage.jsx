@@ -99,6 +99,11 @@ export default function ReviewDetailPage() {
             <StarRating rating={review.rating} size="sm" showValue />
             <span className="text-sm text-slate-500">by {review.author_name || 'Customer'}</span>
           </div>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reviewer profile</p>
+            <p className="mt-2 text-sm font-medium text-slate-900">{review.author_name || 'Customer'}</p>
+            <p className="text-sm text-slate-600">{review.author_email || 'No email available'}</p>
+          </div>
           <h2 className="mt-4 text-xl font-semibold text-slate-900">{review.title || 'Untitled review'}</h2>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
             {review.content || '—'}
@@ -106,7 +111,7 @@ export default function ReviewDetailPage() {
           <p className="mt-4 text-sm text-slate-500">
             Business:{' '}
             <Link
-              to={`/businesses/${review.business_id}/reviews`}
+              to={`/businesses/${review.business_id}?tab=reviews`}
               className="font-medium text-primary-600 hover:underline"
             >
               {review.business_name}

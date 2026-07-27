@@ -172,13 +172,18 @@ export default function ReviewsPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">
                     <Link
-                      to={`/businesses/${review.business_id}/reviews`}
+                      to={`/businesses/${review.business_id}?tab=reviews`}
                       className="text-slate-900 hover:text-primary-600 hover:underline"
                     >
                       {review.business_name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{review.author_name}</td>
+                  <td className="px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-900">{review.author_name || 'Customer'}</p>
+                      <p className="truncate text-xs text-slate-500">{review.author_email || 'No email'}</p>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <StarRating rating={review.rating} size="sm" />
                   </td>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
@@ -7,7 +7,14 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import { formatDate } from '../utils/format'
-import { resolveMediaUrl } from '../utils/constants'
+import { REVIEW_STATUS, resolveMediaUrl } from '../utils/constants'
+
+const statusColors = {
+  [REVIEW_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
+  [REVIEW_STATUS.PUBLISHED]: 'bg-green-100 text-green-800',
+  [REVIEW_STATUS.REJECTED]: 'bg-red-100 text-red-800',
+  [REVIEW_STATUS.REPORTED]: 'bg-orange-100 text-orange-800',
+}
 
 const PLAN_OPTIONS = ['free', 'starter', 'premium']
 const SUBSCRIPTION_STATUS_OPTIONS = ['active', 'cancelled', 'past_due', 'trialing']
@@ -45,17 +52,27 @@ export default function BusinessDetailPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const editing = location.pathname.endsWith('/edit')
+  const activeTab = editing ? 'overview' : searchParams.get('tab') === 'reviews' ? 'reviews' : 'overview'
 
   const [business, setBusiness] = useState(null)
   const [categoryTree, setCategoryTree] = useState([])
   const [form, setForm] = useState(null)
+  const [reviews, setReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsError, setReviewsError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const [saveError, setSaveError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const setTab = (tab) => {
+    if (tab === 'reviews') setSearchParams({ tab: 'reviews' })
+    else setSearchParams({})
+  }
 
   useEffect(() => {
     if (location.state?.saved) {
@@ -106,6 +123,24 @@ export default function BusinessDetailPage() {
       cancelled = true
     }
   }, [editing, categoryTree.length, business])
+
+  const loadReviews = () => {
+    setReviewsLoading(true)
+    setReviewsError('')
+    adminApi
+      .getReviews()
+      .then((allReviews) => {
+        setReviews((allReviews || []).filter((review) => String(review.business_id) === String(id)))
+      })
+      .catch((err) => setReviewsError(err.message || 'Failed to load reviews'))
+      .finally(() => setReviewsLoading(false))
+  }
+
+  useEffect(() => {
+    if (activeTab !== 'reviews' || editing) return
+    loadReviews()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, editing, id])
 
   const subcategoryOptions = useMemo(() => {
     const main = categoryTree.find((item) => item.id === form?.mainCategoryId)
@@ -261,6 +296,106 @@ export default function BusinessDetailPage() {
           </div>
         </div>
       </div>
+
+      {!editing ? (
+        <div className="mb-6 flex gap-2 border-b border-border">
+          <button
+            type="button"
+            onClick={() => setTab('overview')}
+            className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+              activeTab === 'overview'
+                ? 'border-primary-600 text-primary-700'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('reviews')}
+            className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+              activeTab === 'reviews'
+                ? 'border-primary-600 text-primary-700'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Reviews
+            {typeof business.review_count === 'number' ? (
+              <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                {business.review_count}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      ) : null}
+
+      {activeTab === 'reviews' && !editing ? (
+        <div className="space-y-4">
+          {reviewsLoading ? <LoadingSpinner /> : null}
+          {reviewsError ? <ErrorMessage message={reviewsError} onRetry={loadReviews} /> : null}
+          {!reviewsLoading && !reviewsError && reviews.length === 0 ? (
+            <div className="card p-8 text-center text-sm text-slate-500">
+              No reviews for this business yet.
+            </div>
+          ) : null}
+          {!reviewsLoading &&
+            !reviewsError &&
+            reviews.map((review) => (
+              <article key={review.id} className="card space-y-4 p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <StarRating rating={review.rating} size="sm" showValue />
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                          statusColors[review.status] || 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {review.status}
+                      </span>
+                      <span className="text-sm text-slate-500">{formatDate(review.created_at)}</span>
+                    </div>
+                    <h3 className="mt-3 text-lg font-semibold text-slate-900">
+                      {review.title || 'Untitled review'}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      by {review.author_name || 'Customer'}
+                      {review.author_email ? ` · ${review.author_email}` : ''}
+                    </p>
+                  </div>
+                  <Link
+                    to={`/reviews/${review.id}`}
+                    className="text-sm font-medium text-primary-600 hover:underline"
+                  >
+                    Open review
+                  </Link>
+                </div>
+
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {review.content || '—'}
+                </p>
+
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Business owner reply
+                  </p>
+                  {review.business_reply ? (
+                    <>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                        {review.business_reply}
+                      </p>
+                      <p className="mt-2 text-xs text-slate-400">
+                        Replied {formatDate(review.business_reply_at)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-slate-500">No reply yet.</p>
+                  )}
+                </div>
+              </article>
+            ))}
+        </div>
+      ) : null}
 
       {editing ? (
         <form onSubmit={handleSave} className="card space-y-6 p-6">
@@ -444,7 +579,7 @@ export default function BusinessDetailPage() {
             </button>
           </div>
         </form>
-      ) : (
+      ) : activeTab === 'overview' ? (
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="card p-6">
             <h3 className="text-base font-semibold text-slate-900">Profile</h3>
@@ -536,7 +671,7 @@ export default function BusinessDetailPage() {
             </dl>
           </section>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

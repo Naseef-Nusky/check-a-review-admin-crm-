@@ -61,8 +61,9 @@ export default function FlaggedReviewsPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900">{review.business_name}</span>
                     <span className="text-gray-400">•</span>
-                    <span className="text-sm text-gray-500">{review.author_name}</span>
+                    <span className="text-sm text-gray-500">{review.author_name || 'Customer'}</span>
                   </div>
+                  <p className="mt-1 text-xs text-slate-500">{review.author_email || 'No email'}</p>
                   <p className="mt-2 text-sm text-gray-600">{review.content}</p>
                   <p className="mt-1 text-xs text-gray-400">{formatDate(review.created_at)}</p>
                 </div>
