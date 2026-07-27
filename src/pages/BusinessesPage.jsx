@@ -1,28 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Eye, Pencil, Search, Trash2, X } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import CreateBusinessWizard from '../components/CreateBusinessWizard'
 import { formatDate } from '../utils/format'
 import StarRating from '../components/StarRating'
+import { resolveMediaUrl } from '../utils/constants'
+
+const PLAN_FILTERS = ['all', 'free', 'starter', 'premium']
+const STATUS_FILTERS = ['all', 'active', 'cancelled', 'past_due', 'trialing']
 
 export default function BusinessesPage() {
   const [businesses, setBusinesses] = useState([])
   const [categoryTree, setCategoryTree] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState('')
+  const [actionError, setActionError] = useState('')
   const [addOpen, setAddOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState('')
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    mainCategoryId: '',
-    category: '',
-    website: '',
-    phone: '',
-    description: '',
+  const [filters, setFilters] = useState({
+    search: '',
+    category: 'all',
+    plan: 'all',
+    status: 'all',
   })
 
   const load = () => {
@@ -39,53 +42,81 @@ export default function BusinessesPage() {
 
   useEffect(load, [])
 
-  const subcategoryOptions = useMemo(() => {
-    const main = categoryTree.find((item) => item.id === form.mainCategoryId)
-    return main?.subcategories || []
-  }, [categoryTree, form.mainCategoryId])
+  const categoryOptions = useMemo(() => {
+    const values = new Set()
+    businesses.forEach((biz) => {
+      if (biz.category) values.add(biz.category)
+    })
+    return Array.from(values).sort((a, b) => a.localeCompare(b))
+  }, [businesses])
+
+  const filteredBusinesses = useMemo(() => {
+    const query = filters.search.trim().toLowerCase()
+
+    return businesses.filter((biz) => {
+      if (filters.category !== 'all' && biz.category !== filters.category) return false
+      if (filters.plan !== 'all' && (biz.plan || 'free') !== filters.plan) return false
+      if (filters.status !== 'all' && (biz.subscription_status || 'active') !== filters.status) {
+        return false
+      }
+
+      if (!query) return true
+
+      const haystack = [
+        biz.name,
+        biz.slug,
+        biz.category,
+        biz.email,
+        biz.owner_email,
+        biz.owner_name,
+        biz.phone,
+        biz.website,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(query)
+    })
+  }, [businesses, filters])
+
+  const hasActiveFilters =
+    filters.search.trim() !== ''
+    || filters.category !== 'all'
+    || filters.plan !== 'all'
+    || filters.status !== 'all'
+
+  const updateFilter = (key) => (e) => setFilters((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      category: 'all',
+      plan: 'all',
+      status: 'all',
+    })
+  }
+
+  const handleDelete = async (biz) => {
+    const confirmed = window.confirm(
+      `Remove business "${biz.name}"?\n\nThis permanently deletes the business profile and owner account.`,
+    )
+    if (!confirmed) return
+
+    setDeletingId(biz.id)
+    setActionError('')
+    try {
+      await adminApi.deleteBusiness(biz.id)
+      setBusinesses((prev) => prev.filter((item) => item.id !== biz.id))
+    } catch (err) {
+      setActionError(err.message || 'Failed to remove business')
+    } finally {
+      setDeletingId('')
+    }
+  }
 
   if (loading) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} onRetry={load} />
-
-  const handleChange = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
-
-  const handleMainCategoryChange = (e) => {
-    const mainCategoryId = e.target.value
-    setForm((prev) => ({ ...prev, mainCategoryId, category: '' }))
-  }
-
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
-    setSubmitError('')
-    try {
-      await adminApi.createBusiness({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        category: form.category,
-        website: form.website || null,
-        phone: form.phone || null,
-        description: form.description || null,
-      })
-      setAddOpen(false)
-      setForm({
-        name: '',
-        email: '',
-        password: '',
-        mainCategoryId: '',
-        category: '',
-        website: '',
-        phone: '',
-        description: '',
-      })
-      load()
-    } catch (err) {
-      setSubmitError(err.message || 'Failed to create business')
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   return (
     <div>
@@ -99,233 +130,200 @@ export default function BusinessesPage() {
         </button>
       </PageHeader>
 
-      {addOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-10">
-          <div
-            className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
-            onClick={() => {
-              if (!submitting) setAddOpen(false)
-            }}
-            aria-hidden="true"
-          />
-
-          <div className="relative w-full max-w-lg rounded-2xl border border-border bg-white p-6 shadow-[0_30px_90px_rgb(15_23_42/0.25)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Create a business</h2>
-                <p className="mt-1 text-sm text-slate-500">This will create a business owner + business account.</p>
-              </div>
-              <button
-                type="button"
-                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                onClick={() => {
-                  if (!submitting) setAddOpen(false)
-                }}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {submitError && (
-              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {submitError}
-              </div>
-            )}
-
-            <form onSubmit={handleCreate} className="mt-5 space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="bizName">
-                  Business name
-                </label>
-                <input
-                  id="bizName"
-                  required
-                  className="input-field"
-                  value={form.name}
-                  onChange={handleChange('name')}
-                  placeholder="e.g. Tech Solutions Inc"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="ownerEmail">
-                  Owner email
-                </label>
-                <input
-                  id="ownerEmail"
-                  required
-                  type="email"
-                  className="input-field"
-                  value={form.email}
-                  onChange={handleChange('email')}
-                  placeholder="owner@company.com"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="ownerPassword">
-                  Owner password
-                </label>
-                <input
-                  id="ownerPassword"
-                  required
-                  type="password"
-                  minLength={6}
-                  className="input-field"
-                  value={form.password}
-                  onChange={handleChange('password')}
-                  placeholder="Business@123"
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="bizMainCategory">
-                    Main category
-                  </label>
-                  <select
-                    id="bizMainCategory"
-                    required
-                    className="input-field"
-                    value={form.mainCategoryId}
-                    onChange={handleMainCategoryChange}
-                  >
-                    <option value="">Select main category</option>
-                    {categoryTree.map((main) => (
-                      <option key={main.id} value={main.id}>
-                        {main.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="bizCategory">
-                    Subcategory
-                  </label>
-                  <select
-                    id="bizCategory"
-                    required
-                    className="input-field"
-                    value={form.category}
-                    onChange={handleChange('category')}
-                    disabled={!form.mainCategoryId}
-                  >
-                    <option value="">Select subcategory</option>
-                    {subcategoryOptions.map((sub) => (
-                      <option key={sub.id} value={sub.name}>
-                        {sub.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {categoryTree.length === 0 && (
-                <p className="text-sm text-amber-700">
-                  No categories found. Seed categories from the Categories tab first.
-                </p>
-              )}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="bizWebsite">
-                    Website (optional)
-                  </label>
-                  <input
-                    id="bizWebsite"
-                    className="input-field"
-                    value={form.website}
-                    onChange={handleChange('website')}
-                    placeholder="https://company.com"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="bizPhone">
-                    Phone (optional)
-                  </label>
-                  <input
-                    id="bizPhone"
-                    className="input-field"
-                    value={form.phone}
-                    onChange={handleChange('phone')}
-                    placeholder="+1 555 123 4567"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="bizDesc">
-                  Description (optional)
-                </label>
-                <textarea
-                  id="bizDesc"
-                  className="input-field min-h-[110px] resize-none"
-                  value={form.description}
-                  onChange={handleChange('description')}
-                  placeholder="Short company description"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  onClick={() => {
-                    if (!submitting) setAddOpen(false)
-                  }}
-                  disabled={submitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
-                  disabled={submitting}
-                >
-                  {submitting ? 'Creating...' : 'Create business'}
-                </button>
-              </div>
-            </form>
-          </div>
+      {actionError ? (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {actionError}
         </div>
-      )}
+      ) : null}
 
-      <div className="card overflow-hidden">
-        <table className="data-table">
+      <div className="card mb-4 p-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={filters.search}
+              onChange={updateFilter('search')}
+              placeholder="Search name, email, owner..."
+              className="input-field pl-9"
+              aria-label="Search businesses"
+            />
+          </div>
+
+          <select
+            className="input-field"
+            value={filters.category}
+            onChange={updateFilter('category')}
+            aria-label="Filter by category"
+          >
+            <option value="all">All categories</option>
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="input-field"
+            value={filters.plan}
+            onChange={updateFilter('plan')}
+            aria-label="Filter by plan"
+          >
+            {PLAN_FILTERS.map((plan) => (
+              <option key={plan} value={plan}>
+                {plan === 'all' ? 'All plans' : plan}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="input-field"
+            value={filters.status}
+            onChange={updateFilter('status')}
+            aria-label="Filter by status"
+          >
+            {STATUS_FILTERS.map((status) => (
+              <option key={status} value={status}>
+                {status === 'all' ? 'All statuses' : status.replace('_', ' ')}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <X className="h-4 w-4" />
+            Clear
+          </button>
+        </div>
+
+        <p className="mt-3 text-sm text-slate-500">
+          Showing <span className="font-medium text-slate-700">{filteredBusinesses.length}</span> of{' '}
+          <span className="font-medium text-slate-700">{businesses.length}</span> businesses
+        </p>
+      </div>
+
+      <CreateBusinessWizard
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        categoryTree={categoryTree}
+        createBusiness={(payload) => adminApi.createBusiness(payload)}
+        onCreated={() => {
+          setAddOpen(false)
+          load()
+        }}
+      />
+
+      <div className="card overflow-x-auto">
+        <table className="data-table min-w-[1100px]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Business</th>
               <th className="px-4 py-3 font-medium text-gray-700">Category</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Contact</th>
               <th className="px-4 py-3 font-medium text-gray-700">Rating</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Reviews</th>
               <th className="px-4 py-3 font-medium text-gray-700">Plan</th>
               <th className="px-4 py-3 font-medium text-gray-700">Owner</th>
               <th className="px-4 py-3 font-medium text-gray-700">Joined</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {businesses.length === 0 ? (
+            {filteredBusinesses.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No businesses found
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                  {businesses.length === 0
+                    ? 'No businesses found'
+                    : 'No businesses match your filters'}
                 </td>
               </tr>
             ) : (
-              businesses.map((biz) => (
-                <tr key={biz.id} className="border-b border-gray-100">
-                  <td className="px-4 py-3 font-medium">{biz.name}</td>
+              filteredBusinesses.map((biz) => (
+                <tr key={biz.id} className="border-b border-gray-100 hover:bg-slate-50/80">
+                  <td className="px-4 py-3">
+                    <Link to={`/businesses/${biz.id}`} className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+                        {biz.logo_url ? (
+                          <img
+                            src={resolveMediaUrl(biz.logo_url)}
+                            alt=""
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-slate-400">
+                            {(biz.name || '?').charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900 hover:text-primary-600">{biz.name}</p>
+                        <p className="truncate text-xs text-slate-400">/{biz.slug}</p>
+                      </div>
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{biz.category || '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">
+                    <div className="space-y-0.5">
+                      <p>{biz.email || '—'}</p>
+                      <p>{biz.phone || '—'}</p>
+                      {biz.website ? (
+                        <a
+                          href={biz.website.startsWith('http') ? biz.website : `https://${biz.website}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary-600 hover:underline"
+                        >
+                          Website
+                        </a>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <StarRating rating={biz.average_rating || 0} size="sm" showValue />
                   </td>
+                  <td className="px-4 py-3 text-gray-500">{biz.review_count ?? 0}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium capitalize text-primary-800">
                       {biz.plan || 'free'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{biz.owner_email}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">
+                    <p className="font-medium text-slate-700">{biz.owner_name || '—'}</p>
+                    <p>{biz.owner_email || '—'}</p>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(biz.created_at)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/businesses/${biz.id}`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-slate-600 hover:bg-slate-50"
+                        title="View"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                      <Link
+                        to={`/businesses/${biz.id}/edit`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-slate-600 hover:bg-slate-50"
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(biz)}
+                        disabled={deletingId === biz.id}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}

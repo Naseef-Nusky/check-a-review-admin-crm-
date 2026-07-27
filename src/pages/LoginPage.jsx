@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { LockKeyhole } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { adminApi, ApiError } from '../services/api'
+import { isCrmRole } from '../utils/constants'
 import Button from '../components/Button'
+import PasswordInput from '../components/PasswordInput'
+import DomainEmailInput, { toCrmEmail } from '../components/DomainEmailInput'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,10 +22,10 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { user, token } = await adminApi.login(email, password)
+      const { user, token } = await adminApi.login(toCrmEmail(email), password)
 
-      if (user.role !== 'admin') {
-        setError('Access denied. Admin credentials required.')
+      if (!isCrmRole(user.role)) {
+        setError('Access denied. CRM credentials required.')
         return
       }
 
@@ -40,11 +43,13 @@ export default function LoginPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto inline-flex rounded-2xl bg-slate-900 p-3 ring-1 ring-white/10">
-            <img
-              src="/logo-check-a-review.png"
-              alt="Check A Review"
-              className="h-10 w-auto object-contain sm:h-11"
-            />
+            <Link to="/">
+              <img
+                src="/logo-check-a-review.png"
+                alt="Check A Review"
+                className="h-10 w-auto object-contain sm:h-11"
+              />
+            </Link>
           </div>
 
           <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm sm:p-8">
@@ -65,37 +70,25 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
-                  placeholder="admin@checkareview.com"
-                />
-              </div>
+              <DomainEmailInput
+                id="email"
+                label="Email address"
+                required
+                value={email}
+                onChange={setEmail}
+                placeholder=""
+                labelClassName="mb-1.5 block text-sm font-medium text-slate-700"
+              />
 
-              <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
-                  placeholder="Enter your password"
-                />
-              </div>
+              <PasswordInput
+                id="password"
+                label="Password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+              />
 
               <Button type="submit" className="w-full rounded-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in to admin'}

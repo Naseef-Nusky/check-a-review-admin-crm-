@@ -36,7 +36,7 @@ export default function DashboardPage() {
         description="Platform performance, moderation queue, and revenue signals."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total customers" value={stats.totalCustomers.toLocaleString()} icon={Users} />
+        <StatCard label="Total users" value={(stats.totalUsers ?? stats.totalCustomers).toLocaleString()} icon={Users} />
         <StatCard label="Total businesses" value={stats.totalBusinesses.toLocaleString()} icon={Building2} />
         <StatCard label="Total reviews" value={stats.totalReviews.toLocaleString()} icon={MessageSquare} />
         <StatCard label="Total revenue" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} />

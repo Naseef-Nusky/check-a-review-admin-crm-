@@ -40,7 +40,14 @@ export const api = {
 export const adminApi = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: () => api.get('/admin/users'),
+  getStaff: () => api.get('/admin/staff'),
+  createStaff: (data) => api.post('/admin/staff', data),
+  updateStaff: (id, data) => api.patch(`/admin/staff/${id}`, data),
+  deleteStaff: (id) => api.delete(`/admin/staff/${id}`),
   getBusinesses: () => api.get('/admin/businesses'),
+  getBusiness: (id) => api.get(`/admin/businesses/${id}`),
+  updateBusiness: (id, data) => api.patch(`/admin/businesses/${id}`, data),
+  deleteBusiness: (id) => api.delete(`/admin/businesses/${id}`),
   getBusinessCategories: () => api.get('/admin/categories'),
   createMainCategory: (name) => api.post('/admin/categories/main', { name }),
   createSubCategory: (mainCategoryId, name) =>
@@ -53,13 +60,17 @@ export const adminApi = {
   createCategory: (name) => api.post('/admin/categories/main', { name }),
   createBusiness: (data) => api.post('/admin/businesses', data),
   getReviews: () => api.get('/admin/reviews'),
+  getReview: (id) => api.get(`/admin/reviews/${id}`),
   getFlaggedReviews: () => api.get('/admin/reviews/flagged'),
   moderateReview: (id, status) => api.patch(`/admin/reviews/${id}/moderate`, { status }),
   getSubscriptions: () => api.get('/admin/subscriptions'),
   getPayments: () => api.get('/admin/payments'),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
+  getPricing: () => api.get('/admin/pricing'),
+  updatePricing: (data) => api.put('/admin/pricing', data),
   login: (email, password) => api.post('/auth/login', { email, password }),
+  getMe: () => api.get('/auth/me'),
 }
 
 export { ApiError }

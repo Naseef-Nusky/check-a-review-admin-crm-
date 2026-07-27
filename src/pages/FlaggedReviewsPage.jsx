@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Eye } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
@@ -76,6 +78,13 @@ export default function FlaggedReviewsPage() {
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
+                <Link
+                  to={`/reviews/${review.id}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <Eye className="h-4 w-4" />
+                  View details
+                </Link>
                 <Button
                   size="sm"
                   disabled={actionId === review.id}

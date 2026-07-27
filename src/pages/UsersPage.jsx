@@ -27,7 +27,7 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader title="Manage Customers" description="View and manage customer accounts" />
+      <PageHeader title="Manage Users" description="View and manage user accounts" />
       <div className="card overflow-hidden">
         <table className="data-table">
           <thead className="border-b border-gray-200 bg-gray-50">
@@ -43,7 +43,7 @@ export default function UsersPage() {
             {users.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                  No customers found
+                  No users found
                 </td>
               </tr>
             ) : (
