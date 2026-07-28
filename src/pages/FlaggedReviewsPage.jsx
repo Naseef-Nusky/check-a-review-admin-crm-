@@ -45,12 +45,12 @@ export default function FlaggedReviewsPage() {
   return (
     <div>
       <PageHeader
-        title="AI Flagged Reviews"
-        description="Reviews flagged by AI for manual admin review"
+        title="Pending review queue"
+        description="Reviews held in processing after automated / AI checks — publish or reject manually"
       />
       {reviews.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500 shadow-sm">
-          No flagged reviews pending review
+          No reviews waiting in the processing queue
         </div>
       ) : (
         <div className="space-y-4">

@@ -25,7 +25,7 @@ const sidebarLinks = [
   { to: '/businesses', label: 'Businesses', icon: Building2, end: true },
   { to: '/categories', label: 'Categories', icon: FolderTree },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
-  { to: '/flagged', label: 'AI Flagged', icon: AlertTriangle },
+  { to: '/flagged', label: 'Pending queue', icon: AlertTriangle },
   { to: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { to: '/payments', label: 'Payments', icon: Receipt },
   { to: '/pricing', label: 'Pricing CMS', icon: CreditCard },

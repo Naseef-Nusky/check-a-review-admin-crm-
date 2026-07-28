@@ -84,11 +84,15 @@ export default function SettingsPage() {
           <input id="aiModeration" type="checkbox" checked={settings.aiModeration} onChange={(e) => setSettings({ ...settings, aiModeration: e.target.checked })} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
           <label htmlFor="aiModeration" className="text-sm font-medium text-slate-700">Enable AI review moderation</label>
         </div>
+        <p className="text-xs text-slate-500 -mt-2">
+          Reviews always start as pending. Automated checks for spam, personal info, duplicates, and policy still run even if AI is off.
+          When AI is on, Gemini also screens content. Passing reviews auto-publish; flagged ones stay pending for admin.
+        </p>
         <div>
           <label htmlFor="autoPublishThreshold" className="label-text text-slate-700">Auto-publish risk threshold (0–100)</label>
           <input id="autoPublishThreshold" type="number" min="0" max="100" value={settings.autoPublishThreshold} onChange={(e) => setSettings({ ...settings, autoPublishThreshold: e.target.value })} className="input-field" />
           <p className="mt-1.5 text-xs text-slate-500">
-            Reviews with a risk score at or below this value can auto-publish when AI recommends publish. Lower = stricter.
+            Reviews with a risk score at or below this value can auto-publish when checks recommend publish. Lower = stricter.
           </p>
         </div>
         <div>
