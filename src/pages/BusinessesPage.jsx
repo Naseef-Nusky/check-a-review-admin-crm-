@@ -12,6 +12,13 @@ import { resolveMediaUrl } from '../utils/constants'
 
 const PLAN_FILTERS = ['all', 'free', 'starter', 'premium']
 const STATUS_FILTERS = ['all', 'active', 'cancelled', 'past_due', 'trialing']
+const LISTING_STATUS_FILTERS = ['all', 'pending', 'published', 'rejected']
+
+const listingStatusClass = {
+  pending: 'bg-amber-100 text-amber-800',
+  published: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800',
+}
 
 export default function BusinessesPage() {
   const [businesses, setBusinesses] = useState([])
@@ -26,6 +33,7 @@ export default function BusinessesPage() {
     category: 'all',
     plan: 'all',
     status: 'all',
+    listingStatus: 'all',
   })
 
   const load = () => {
@@ -59,6 +67,9 @@ export default function BusinessesPage() {
       if (filters.status !== 'all' && (biz.subscription_status || 'active') !== filters.status) {
         return false
       }
+      if (filters.listingStatus !== 'all' && (biz.status || 'published') !== filters.listingStatus) {
+        return false
+      }
 
       if (!query) return true
 
@@ -85,6 +96,7 @@ export default function BusinessesPage() {
     || filters.category !== 'all'
     || filters.plan !== 'all'
     || filters.status !== 'all'
+    || filters.listingStatus !== 'all'
 
   const updateFilter = (key) => (e) => setFilters((prev) => ({ ...prev, [key]: e.target.value }))
 
@@ -94,6 +106,7 @@ export default function BusinessesPage() {
       category: 'all',
       plan: 'all',
       status: 'all',
+      listingStatus: 'all',
     })
   }
 
@@ -137,7 +150,7 @@ export default function BusinessesPage() {
       ) : null}
 
       <div className="card mb-4 p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -179,13 +192,26 @@ export default function BusinessesPage() {
 
           <select
             className="input-field"
+            value={filters.listingStatus}
+            onChange={updateFilter('listingStatus')}
+            aria-label="Filter by listing status"
+          >
+            {LISTING_STATUS_FILTERS.map((status) => (
+              <option key={status} value={status}>
+                {status === 'all' ? 'All listing statuses' : status}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="input-field"
             value={filters.status}
             onChange={updateFilter('status')}
-            aria-label="Filter by status"
+            aria-label="Filter by subscription status"
           >
             {STATUS_FILTERS.map((status) => (
               <option key={status} value={status}>
-                {status === 'all' ? 'All statuses' : status.replace('_', ' ')}
+                {status === 'all' ? 'All subscription statuses' : status.replace('_', ' ')}
               </option>
             ))}
           </select>
@@ -223,6 +249,7 @@ export default function BusinessesPage() {
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Business</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Listing</th>
               <th className="px-4 py-3 font-medium text-gray-700">Category</th>
               <th className="px-4 py-3 font-medium text-gray-700">Contact</th>
               <th className="px-4 py-3 font-medium text-gray-700">Rating</th>
@@ -236,7 +263,7 @@ export default function BusinessesPage() {
           <tbody>
             {filteredBusinesses.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                   {businesses.length === 0
                     ? 'No businesses found'
                     : 'No businesses match your filters'}
@@ -265,6 +292,15 @@ export default function BusinessesPage() {
                         <p className="truncate text-xs text-slate-400">/{biz.slug}</p>
                       </div>
                     </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                        listingStatusClass[biz.status || 'published'] || 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {biz.status || 'published'}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{biz.category || '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">

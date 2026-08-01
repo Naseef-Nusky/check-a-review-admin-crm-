@@ -68,6 +68,7 @@ export default function BusinessDetailPage() {
   const [error, setError] = useState('')
   const [saveError, setSaveError] = useState('')
   const [success, setSuccess] = useState('')
+  const [moderating, setModerating] = useState(false)
 
   const setTab = (tab) => {
     if (tab === 'reviews') setSearchParams({ tab: 'reviews' })
@@ -213,6 +214,20 @@ export default function BusinessDetailPage() {
     }
   }
 
+  const handleModerate = async (status) => {
+    setModerating(true)
+    setSaveError('')
+    try {
+      const updated = await adminApi.moderateBusiness(id, status)
+      setBusiness((prev) => ({ ...prev, ...updated }))
+      setSuccess(status === 'published' ? 'Business approved and published' : 'Business listing rejected')
+    } catch (err) {
+      setSaveError(err.message || 'Failed to update listing status')
+    } finally {
+      setModerating(false)
+    }
+  }
+
   if (loading) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} onRetry={() => window.location.reload()} />
   if (!business || !form) return <ErrorMessage message="Business not found" />
@@ -293,9 +308,44 @@ export default function BusinessDetailPage() {
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium capitalize text-slate-700">
               {business.subscription_status || 'active'}
             </span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                business.status === 'published'
+                  ? 'bg-green-100 text-green-800'
+                  : business.status === 'rejected'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              Listing: {business.status || 'published'}
+            </span>
           </div>
         </div>
       </div>
+
+      {!editing && business.status === 'pending' ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-900">This listing is waiting for approval before it appears publicly.</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={moderating}
+              onClick={() => handleModerate('published')}
+              className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+            >
+              Approve & Publish
+            </button>
+            <button
+              type="button"
+              disabled={moderating}
+              onClick={() => handleModerate('rejected')}
+              className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {!editing ? (
         <div className="mb-6 flex gap-2 border-b border-border">

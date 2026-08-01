@@ -13,6 +13,7 @@ import ReviewsPage from '../pages/ReviewsPage'
 import ReviewDetailPage from '../pages/ReviewDetailPage'
 import BusinessReviewsPage from '../pages/BusinessReviewsPage'
 import FlaggedReviewsPage from '../pages/FlaggedReviewsPage'
+import PendingBusinessesPage from '../pages/PendingBusinessesPage'
 import SubscriptionsPage from '../pages/SubscriptionsPage'
 import PaymentsPage from '../pages/PaymentsPage'
 import SettingsPage from '../pages/SettingsPage'
@@ -40,6 +41,7 @@ export default function AppRoutes() {
           <Route path="reviews/:id" element={<ReviewDetailPage />} />
           <Route path="businesses/:id/reviews" element={<BusinessReviewsPage />} />
           <Route path="flagged" element={<FlaggedReviewsPage />} />
+          <Route path="pending-businesses" element={<PendingBusinessesPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="pricing" element={<PricingPage />} />
