@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import AdminLayout from '../layouts/AdminLayout'
 import ProtectedRoute from './ProtectedRoute'
@@ -24,6 +24,11 @@ function LoginRedirect() {
   return isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
 }
 
+function BusinessEditRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/businesses/${id}`} replace />
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -35,7 +40,7 @@ export default function AppRoutes() {
           <Route path="staff" element={<StaffPage />} />
           <Route path="businesses" element={<BusinessesPage />} />
           <Route path="businesses/:id" element={<BusinessDetailPage />} />
-          <Route path="businesses/:id/edit" element={<BusinessDetailPage />} />
+          <Route path="businesses/:id/edit" element={<BusinessEditRedirect />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="reviews" element={<ReviewsPage />} />
           <Route path="reviews/:id" element={<ReviewDetailPage />} />

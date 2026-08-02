@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Trash2 } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -16,9 +16,6 @@ const statusColors = {
   [REVIEW_STATUS.REPORTED]: 'bg-orange-100 text-orange-800',
 }
 
-const PLAN_OPTIONS = ['free', 'starter', 'premium']
-const SUBSCRIPTION_STATUS_OPTIONS = ['active', 'cancelled', 'past_due', 'trialing']
-
 function DetailItem({ label, children }) {
   return (
     <div className="min-w-0">
@@ -28,47 +25,22 @@ function DetailItem({ label, children }) {
   )
 }
 
-function businessToForm(business, categoryTree) {
-  const matchingMain = categoryTree.find((main) =>
-    main.subcategories.some((sub) => sub.name.toLowerCase() === String(business.category || '').toLowerCase()),
-  )
-  return {
-    name: business.name || '',
-    mainCategoryId: matchingMain?.id || '',
-    category: business.category || '',
-    description: business.description || '',
-    website: business.website || '',
-    email: business.email || '',
-    phone: business.phone || '',
-    address: business.address || '',
-    owner_name: business.owner_name || '',
-    owner_email: business.owner_email || '',
-    plan: business.plan || 'free',
-    subscription_status: business.subscription_status || 'active',
-  }
-}
-
 export default function BusinessDetailPage() {
   const { id } = useParams()
-  const location = useLocation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const editing = location.pathname.endsWith('/edit')
-  const activeTab = editing ? 'overview' : searchParams.get('tab') === 'reviews' ? 'reviews' : 'overview'
+  const activeTab = searchParams.get('tab') === 'reviews' ? 'reviews' : 'overview'
 
   const [business, setBusiness] = useState(null)
-  const [categoryTree, setCategoryTree] = useState([])
-  const [form, setForm] = useState(null)
   const [reviews, setReviews] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsError, setReviewsError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
-  const [saveError, setSaveError] = useState('')
   const [success, setSuccess] = useState('')
   const [moderating, setModerating] = useState(false)
+  const [moderateError, setModerateError] = useState('')
 
   const setTab = (tab) => {
     if (tab === 'reviews') setSearchParams({ tab: 'reviews' })
@@ -76,29 +48,20 @@ export default function BusinessDetailPage() {
   }
 
   useEffect(() => {
-    if (location.state?.saved) {
-      setSuccess('Business updated successfully')
-      navigate(location.pathname, { replace: true, state: {} })
-    }
-  }, [location.state, location.pathname, navigate])
-
-  useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError('')
-    setSaveError('')
 
     ;(async () => {
       try {
         const biz = await adminApi.getBusiness(id)
         if (cancelled) return
         setBusiness(biz)
-        setForm(businessToForm(biz, categoryTree))
         setError('')
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load business')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
 
@@ -106,24 +69,6 @@ export default function BusinessDetailPage() {
       cancelled = true
     }
   }, [id])
-
-  useEffect(() => {
-    if (!editing || categoryTree.length > 0) return
-    let cancelled = false
-    adminApi
-      .getBusinessCategories()
-      .then((categories) => {
-        if (cancelled) return
-        setCategoryTree(categories)
-        setForm((prev) => (business ? businessToForm(business, categories) : prev))
-      })
-      .catch(() => {
-        if (!cancelled) setCategoryTree([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [editing, categoryTree.length, business])
 
   const loadReviews = () => {
     setReviewsLoading(true)
@@ -138,63 +83,10 @@ export default function BusinessDetailPage() {
   }
 
   useEffect(() => {
-    if (activeTab !== 'reviews' || editing) return
+    if (activeTab !== 'reviews') return
     loadReviews()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, editing, id])
-
-  const subcategoryOptions = useMemo(() => {
-    const main = categoryTree.find((item) => item.id === form?.mainCategoryId)
-    return main?.subcategories || []
-  }, [categoryTree, form?.mainCategoryId])
-
-  const categoryInTree = useMemo(() => {
-    if (!form?.category) return false
-    return categoryTree.some((main) =>
-      main.subcategories.some((sub) => sub.name.toLowerCase() === form.category.toLowerCase()),
-    )
-  }, [categoryTree, form?.category])
-
-  const handleChange = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
-
-  const handleMainCategoryChange = (e) => {
-    const mainCategoryId = e.target.value
-    setForm((prev) => ({ ...prev, mainCategoryId, category: '' }))
-  }
-
-  const handleSave = async (e) => {
-    e.preventDefault()
-    if (!form?.category) {
-      setSaveError('Please select a category')
-      return
-    }
-
-    setSaving(true)
-    setSaveError('')
-    setSuccess('')
-    try {
-      const updated = await adminApi.updateBusiness(id, {
-        name: form.name,
-        category: form.category,
-        description: form.description || null,
-        website: form.website || null,
-        email: form.email || null,
-        phone: form.phone || null,
-        address: form.address || null,
-        owner_name: form.owner_name || null,
-        owner_email: form.owner_email || null,
-        plan: form.plan,
-        subscription_status: form.subscription_status,
-      })
-      setBusiness(updated)
-      setForm(businessToForm(updated, categoryTree))
-      navigate(`/businesses/${id}`, { replace: true, state: { saved: true } })
-    } catch (err) {
-      setSaveError(err.message || 'Failed to update business')
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [activeTab, id])
 
   const handleDelete = async () => {
     if (!business) return
@@ -216,13 +108,13 @@ export default function BusinessDetailPage() {
 
   const handleModerate = async (status) => {
     setModerating(true)
-    setSaveError('')
+    setModerateError('')
     try {
       const updated = await adminApi.moderateBusiness(id, status)
       setBusiness((prev) => ({ ...prev, ...updated }))
       setSuccess(status === 'published' ? 'Business approved and published' : 'Business listing rejected')
     } catch (err) {
-      setSaveError(err.message || 'Failed to update listing status')
+      setModerateError(err.message || 'Failed to update listing status')
     } finally {
       setModerating(false)
     }
@@ -230,7 +122,7 @@ export default function BusinessDetailPage() {
 
   if (loading) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} onRetry={() => window.location.reload()} />
-  if (!business || !form) return <ErrorMessage message="Business not found" />
+  if (!business) return <ErrorMessage message="Business not found" />
 
   const logoSrc = resolveMediaUrl(business.logo_url)
 
@@ -239,7 +131,7 @@ export default function BusinessDetailPage() {
       <PageHeader
         kicker="Businesses"
         title={business.name}
-        description={editing ? 'Edit business profile and account details' : 'Full business profile and account details'}
+        description="View business profile and account details"
       >
         <div className="flex flex-wrap gap-3">
           <Link
@@ -249,41 +141,28 @@ export default function BusinessDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to list
           </Link>
-          {!editing ? (
-            <>
-              <Link
-                to={`/businesses/${id}/edit`}
-                title="Edit"
-                aria-label="Edit business"
-                className="inline-flex items-center justify-center rounded-xl bg-primary-600 p-2.5 text-white hover:bg-primary-700"
-              >
-                <Pencil className="h-4 w-4" />
-              </Link>
-              <button
-                type="button"
-                title="Remove"
-                aria-label="Remove business"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white p-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </>
-          ) : (
-            <Link
-              to={`/businesses/${id}`}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cancel edit
-            </Link>
-          )}
+          <button
+            type="button"
+            title="Remove"
+            aria-label="Remove business"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white p-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </PageHeader>
 
-      {success && !editing ? (
+      {success ? (
         <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {success}
+        </div>
+      ) : null}
+
+      {moderateError ? (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {moderateError}
         </div>
       ) : null}
 
@@ -323,7 +202,7 @@ export default function BusinessDetailPage() {
         </div>
       </div>
 
-      {!editing && business.status === 'pending' ? (
+      {business.status === 'pending' ? (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm text-amber-900">This listing is waiting for approval before it appears publicly.</p>
           <div className="flex gap-2">
@@ -347,39 +226,37 @@ export default function BusinessDetailPage() {
         </div>
       ) : null}
 
-      {!editing ? (
-        <div className="mb-6 flex gap-2 border-b border-border">
-          <button
-            type="button"
-            onClick={() => setTab('overview')}
-            className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
-              activeTab === 'overview'
-                ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('reviews')}
-            className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
-              activeTab === 'reviews'
-                ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Reviews
-            {typeof business.review_count === 'number' ? (
-              <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                {business.review_count}
-              </span>
-            ) : null}
-          </button>
-        </div>
-      ) : null}
+      <div className="mb-6 flex gap-2 border-b border-border">
+        <button
+          type="button"
+          onClick={() => setTab('overview')}
+          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+            activeTab === 'overview'
+              ? 'border-primary-600 text-primary-700'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('reviews')}
+          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+            activeTab === 'reviews'
+              ? 'border-primary-600 text-primary-700'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          Reviews
+          {typeof business.review_count === 'number' ? (
+            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+              {business.review_count}
+            </span>
+          ) : null}
+        </button>
+      </div>
 
-      {activeTab === 'reviews' && !editing ? (
+      {activeTab === 'reviews' ? (
         <div className="space-y-4">
           {reviewsLoading ? <LoadingSpinner /> : null}
           {reviewsError ? <ErrorMessage message={reviewsError} onRetry={loadReviews} /> : null}
@@ -445,191 +322,7 @@ export default function BusinessDetailPage() {
               </article>
             ))}
         </div>
-      ) : null}
-
-      {editing ? (
-        <form onSubmit={handleSave} className="card space-y-6 p-6">
-          {saveError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {saveError}
-            </div>
-          ) : null}
-
-          <section>
-            <h3 className="text-base font-semibold text-slate-900">Profile</h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="name">
-                  Business name
-                </label>
-                <input id="name" required className="input-field" value={form.name} onChange={handleChange('name')} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="mainCategory">
-                  Main category
-                </label>
-                <select
-                  id="mainCategory"
-                  className="input-field"
-                  value={form.mainCategoryId}
-                  onChange={handleMainCategoryChange}
-                >
-                  <option value="">{categoryInTree ? 'Select main category' : 'Keep current category'}</option>
-                  {categoryTree.map((main) => (
-                    <option key={main.id} value={main.id}>{main.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="category">
-                  Subcategory
-                </label>
-                {form.mainCategoryId ? (
-                  <select
-                    id="category"
-                    required
-                    className="input-field"
-                    value={form.category}
-                    onChange={handleChange('category')}
-                  >
-                    <option value="">Select subcategory</option>
-                    {subcategoryOptions.map((sub) => (
-                      <option key={sub.id} value={sub.name}>{sub.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    id="category"
-                    required
-                    className="input-field"
-                    value={form.category}
-                    onChange={handleChange('category')}
-                    placeholder="Current category"
-                  />
-                )}
-                {!categoryInTree && form.category ? (
-                  <p className="mt-1 text-xs text-amber-600">
-                    Current category is not in the category tree. You can keep it or choose a new main + subcategory.
-                  </p>
-                ) : null}
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="description">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  className="input-field min-h-[110px] resize-none"
-                  value={form.description}
-                  onChange={handleChange('description')}
-                />
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-base font-semibold text-slate-900">Contact</h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="email">
-                  Public email
-                </label>
-                <input id="email" type="email" className="input-field" value={form.email} onChange={handleChange('email')} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="phone">
-                  Phone
-                </label>
-                <input id="phone" className="input-field" value={form.phone} onChange={handleChange('phone')} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="website">
-                  Website
-                </label>
-                <input id="website" className="input-field" value={form.website} onChange={handleChange('website')} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="address">
-                  Address
-                </label>
-                <input id="address" className="input-field" value={form.address} onChange={handleChange('address')} />
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-base font-semibold text-slate-900">Owner account</h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="owner_name">
-                  Owner name
-                </label>
-                <input id="owner_name" className="input-field" value={form.owner_name} onChange={handleChange('owner_name')} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="owner_email">
-                  Owner email
-                </label>
-                <input
-                  id="owner_email"
-                  type="email"
-                  required
-                  className="input-field"
-                  value={form.owner_email}
-                  onChange={handleChange('owner_email')}
-                />
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-base font-semibold text-slate-900">Subscription</h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="plan">
-                  Plan
-                </label>
-                <select id="plan" className="input-field" value={form.plan} onChange={handleChange('plan')}>
-                  {PLAN_OPTIONS.map((plan) => (
-                    <option key={plan} value={plan}>{plan}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="subscription_status">
-                  Status
-                </label>
-                <select
-                  id="subscription_status"
-                  className="input-field"
-                  value={form.subscription_status}
-                  onChange={handleChange('subscription_status')}
-                >
-                  {SUBSCRIPTION_STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <div className="flex justify-end gap-3 border-t border-border pt-4">
-            <Link
-              to={`/businesses/${id}`}
-              className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save changes'}
-            </button>
-          </div>
-        </form>
-      ) : activeTab === 'overview' ? (
+      ) : (
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="card p-6">
             <h3 className="text-base font-semibold text-slate-900">Profile</h3>
@@ -721,7 +414,7 @@ export default function BusinessDetailPage() {
             </dl>
           </section>
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

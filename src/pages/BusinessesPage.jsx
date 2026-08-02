@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Pencil, Search, Trash2, X } from 'lucide-react'
+import { Eye, Search, Trash2, X } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -349,13 +349,6 @@ export default function BusinessesPage() {
                         title="View"
                       >
                         <Eye className="h-4 w-4" />
-                      </Link>
-                      <Link
-                        to={`/businesses/${biz.id}/edit`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-slate-600 hover:bg-slate-50"
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
                       </Link>
                       <button
                         type="button"

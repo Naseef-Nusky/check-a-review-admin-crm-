@@ -47,7 +47,6 @@ export const adminApi = {
   deleteStaff: (id) => api.delete(`/admin/staff/${id}`),
   getBusinesses: () => api.get('/admin/businesses'),
   getBusiness: (id) => api.get(`/admin/businesses/${id}`),
-  updateBusiness: (id, data) => api.patch(`/admin/businesses/${id}`, data),
   deleteBusiness: (id) => api.delete(`/admin/businesses/${id}`),
   getBusinessCategories: () => api.get('/admin/categories'),
   createMainCategory: (name) => api.post('/admin/categories/main', { name }),
