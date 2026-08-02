@@ -5,6 +5,8 @@ import { LOGO_UPLOAD_HINT } from '../utils/constants'
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
 const MAX_BYTES = 2 * 1024 * 1024
+/** Wide brand/email logos — much more horizontal room than a 1:1 square. */
+const DEFAULT_ASPECT = 3 / 1
 
 function createImage(url) {
   return new Promise((resolve, reject) => {
@@ -18,14 +20,15 @@ function createImage(url) {
 
 async function getCroppedFile(imageSrc, pixelCrop, fileName = 'logo.png') {
   const image = await createImage(imageSrc)
+  const width = Math.max(1, Math.round(pixelCrop.width))
+  const height = Math.max(1, Math.round(pixelCrop.height))
   const canvas = document.createElement('canvas')
-  const size = Math.max(pixelCrop.width, pixelCrop.height)
-  canvas.width = size
-  canvas.height = size
+  canvas.width = width
+  canvas.height = height
   const ctx = canvas.getContext('2d')
 
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, size, size)
+  // Keep transparency for PNG logos instead of forcing a white square pad.
+  ctx.clearRect(0, 0, width, height)
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -34,8 +37,8 @@ async function getCroppedFile(imageSrc, pixelCrop, fileName = 'logo.png') {
     pixelCrop.height,
     0,
     0,
-    size,
-    size,
+    width,
+    height,
   )
 
   const blob = await new Promise((resolve) => {
@@ -52,6 +55,8 @@ export default function LogoUploader({
   onChange,
   onError,
   disabled = false,
+  /** Crop frame ratio. Default 3:1 for email/site logos. */
+  aspect = DEFAULT_ASPECT,
 }) {
   const inputRef = useRef(null)
   const [cropOpen, setCropOpen] = useState(false)
@@ -119,6 +124,25 @@ export default function LogoUploader({
     }
   }
 
+  const useFullImage = async () => {
+    if (!cropSrc) return
+    setApplying(true)
+    try {
+      const image = await createImage(cropSrc)
+      const file = await getCroppedFile(
+        cropSrc,
+        { x: 0, y: 0, width: image.width, height: image.height },
+        pendingName,
+      )
+      onChange?.(file)
+      closeCropper()
+    } catch (err) {
+      onError?.(err.message || 'Failed to use full image')
+    } finally {
+      setApplying(false)
+    }
+  }
+
   const onCropComplete = useCallback((_area, pixels) => {
     setCroppedAreaPixels(pixels)
   }, [])
@@ -131,9 +155,9 @@ export default function LogoUploader({
   return (
     <div>
       <div className="mt-2 flex items-start gap-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+        <div className="flex h-20 w-44 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
           {previewUrl ? (
-            <img src={previewUrl} alt="Logo preview" className="h-full w-full object-cover" />
+            <img src={previewUrl} alt="Logo preview" className="max-h-full max-w-full object-contain p-2" />
           ) : (
             <ImagePlus className="h-7 w-7 text-slate-300" />
           )}
@@ -217,9 +241,14 @@ export default function LogoUploader({
 
       {cropOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
-          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h3 className="text-lg font-semibold text-slate-900">Crop logo</h3>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Crop logo</h3>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  Wide selection for email branding — zoom out to include more of the logo.
+                </p>
+              </div>
               <button
                 type="button"
                 className="rounded-full border border-slate-200 p-2 text-slate-400 hover:text-slate-700"
@@ -230,14 +259,18 @@ export default function LogoUploader({
               </button>
             </div>
 
-            <div className="relative h-72 bg-slate-900">
+            <div className="relative h-[28rem] bg-slate-900">
               <Cropper
                 image={cropSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={1}
+                minZoom={0.4}
+                maxZoom={3}
+                aspect={aspect}
                 cropShape="rect"
                 showGrid
+                objectFit="contain"
+                restrictPosition={false}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
@@ -246,10 +279,10 @@ export default function LogoUploader({
 
             <div className="space-y-4 px-5 py-4">
               <label className="block text-sm text-slate-600">
-                Zoom
+                Zoom (zoom out to select more of the image)
                 <input
                   type="range"
-                  min={1}
+                  min={0.4}
                   max={3}
                   step={0.05}
                   value={zoom}
@@ -257,7 +290,7 @@ export default function LogoUploader({
                   className="mt-2 w-full accent-primary-500"
                 />
               </label>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
                   className="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200"
@@ -265,6 +298,14 @@ export default function LogoUploader({
                   disabled={applying}
                 >
                   Cancel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  onClick={useFullImage}
+                  disabled={applying}
+                >
+                  Use full image
                 </button>
                 <button
                   type="button"

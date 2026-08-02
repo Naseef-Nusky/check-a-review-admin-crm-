@@ -9,14 +9,15 @@ class ApiError extends Error {
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('admin_token')
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
 
   const config = {
+    ...options,
     headers: {
-      'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },
-    ...options,
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
@@ -35,6 +36,7 @@ export const api = {
   put: (endpoint, data) => request(endpoint, { method: 'PUT', body: JSON.stringify(data) }),
   patch: (endpoint, data) => request(endpoint, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+  upload: (endpoint, formData) => request(endpoint, { method: 'POST', body: formData }),
 }
 
 export const adminApi = {
@@ -69,6 +71,12 @@ export const adminApi = {
   getPayments: () => api.get('/admin/payments'),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
+  uploadSiteLogo: (file) => {
+    const formData = new FormData()
+    formData.append('logo', file)
+    return api.upload('/admin/settings/logo', formData)
+  },
+  removeSiteLogo: () => api.delete('/admin/settings/logo'),
   getPricing: () => api.get('/admin/pricing'),
   updatePricing: (data) => api.put('/admin/pricing', data),
   getNotifications: () => api.get('/notifications'),

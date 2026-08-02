@@ -30,6 +30,9 @@ export function crmRoleLabel(role) {
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
+export const LOGO_UPLOAD_HINT =
+  'PNG, JPG, or WEBP · max 2MB · wide logos work best for emails (crop is 3:1, or use full image)'
+
 export function resolveMediaUrl(path) {
   if (!path) return ''
   if (/^https?:\/\//i.test(path) || path.startsWith('blob:') || path.startsWith('data:')) {

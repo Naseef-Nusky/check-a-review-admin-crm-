@@ -4,6 +4,8 @@ import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import LogoUploader from '../components/LogoUploader'
+import { resolveMediaUrl } from '../utils/constants'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -12,28 +14,33 @@ export default function SettingsPage() {
     aiModeration: true,
     autoPublishThreshold: '85',
     emailProvider: 'sendgrid',
+    logoUrl: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [error, setError] = useState('')
+  const [logoError, setLogoError] = useState('')
   const [message, setMessage] = useState('')
+
+  const applySettings = (data) => {
+    if (!data) return
+    setSettings({
+      siteName: data.site_name || '',
+      supportEmail: data.support_email || '',
+      aiModeration: data.ai_moderation_enabled ?? true,
+      autoPublishThreshold: String(data.auto_publish_threshold ?? 85),
+      emailProvider: data.email_provider || 'sendgrid',
+      logoUrl: data.logo_url || '',
+    })
+  }
 
   const load = () => {
     setLoading(true)
     setError('')
     adminApi
       .getSettings()
-      .then((data) => {
-        if (data) {
-          setSettings({
-            siteName: data.site_name || '',
-            supportEmail: data.support_email || '',
-            aiModeration: data.ai_moderation_enabled ?? true,
-            autoPublishThreshold: String(data.auto_publish_threshold ?? 85),
-            emailProvider: data.email_provider || 'sendgrid',
-          })
-        }
-      })
+      .then(applySettings)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -47,13 +54,14 @@ export default function SettingsPage() {
     setError('')
 
     try {
-      await adminApi.updateSettings({
+      const updated = await adminApi.updateSettings({
         siteName: settings.siteName,
         supportEmail: settings.supportEmail,
         aiModeration: settings.aiModeration,
         autoPublishThreshold: parseInt(settings.autoPublishThreshold, 10),
         emailProvider: settings.emailProvider,
       })
+      applySettings(updated)
       setMessage('Settings saved successfully')
     } catch (err) {
       setError(err.message)
@@ -62,16 +70,65 @@ export default function SettingsPage() {
     }
   }
 
+  const handleLogoChange = async (file) => {
+    setLogoError('')
+    setMessage('')
+    setError('')
+
+    if (!file) {
+      if (!settings.logoUrl) return
+      if (!window.confirm('Remove the site logo from emails?')) return
+      setUploadingLogo(true)
+      try {
+        const updated = await adminApi.removeSiteLogo()
+        applySettings(updated)
+        setMessage('Logo removed. Emails will use the default brand logo.')
+      } catch (err) {
+        setLogoError(err.message || 'Failed to remove logo')
+      } finally {
+        setUploadingLogo(false)
+      }
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const updated = await adminApi.uploadSiteLogo(file)
+      applySettings(updated)
+      setMessage('Logo uploaded. It will appear in emails.')
+    } catch (err) {
+      setLogoError(err.message || 'Failed to upload logo')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
   if (loading) return <LoadingSpinner />
 
   return (
     <div>
-      <PageHeader title="Website Settings" description="Configure platform settings" />
+      <PageHeader title="Website Settings" description="Configure platform settings and email branding" />
       {error && <ErrorMessage message={error} onRetry={load} />}
       <form onSubmit={handleSubmit} className="card max-w-xl space-y-5 p-6 sm:p-8">
         {message && (
           <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{message}</div>
         )}
+
+        <div>
+          <label className="label-text text-slate-700">Email / site logo</label>
+          <p className="mt-1 text-sm text-slate-500">
+            This logo appears at the top of transactional emails (verification, reviews, invitations, and more).
+          </p>
+          <LogoUploader
+            previewUrl={settings.logoUrl ? resolveMediaUrl(settings.logoUrl) : ''}
+            onChange={handleLogoChange}
+            onError={setLogoError}
+            disabled={uploadingLogo || saving}
+          />
+          {logoError ? <p className="mt-2 text-sm text-red-600">{logoError}</p> : null}
+          {uploadingLogo ? <p className="mt-2 text-sm text-slate-500">Uploading logo...</p> : null}
+        </div>
+
         <div>
           <label htmlFor="siteName" className="label-text text-slate-700">Site Name</label>
           <input id="siteName" type="text" value={settings.siteName} onChange={(e) => setSettings({ ...settings, siteName: e.target.value })} className="input-field" />
