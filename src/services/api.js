@@ -71,6 +71,10 @@ export const adminApi = {
   updateSettings: (data) => api.put('/admin/settings', data),
   getPricing: () => api.get('/admin/pricing'),
   updatePricing: (data) => api.put('/admin/pricing', data),
+  getNotifications: () => api.get('/notifications'),
+  getUnreadNotificationCount: () => api.get('/notifications/unread-count'),
+  markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllNotificationsRead: () => api.patch('/notifications/read-all'),
   login: (email, password) => api.post('/auth/login', { email, password }),
   getMe: () => api.get('/auth/me'),
 }

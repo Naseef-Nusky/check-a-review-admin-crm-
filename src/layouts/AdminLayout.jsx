@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -16,6 +17,8 @@ import { useAuth } from '../context/AuthContext'
 import Button from '../components/Button'
 import { NavIcon } from '../components/AppIcon'
 import { PageHeaderProvider } from '../components/PageHeader'
+import NotificationPanel, { NotificationBell } from '../components/NotificationPanel'
+import { adminApi } from '../services/api'
 import { crmRoleLabel } from '../utils/constants'
 
 const sidebarLinks = [
@@ -41,6 +44,23 @@ const headerBg = {
 function AdminShell({ setHeaderSlot }) {
   const { user, logout, isViewer } = useAuth()
   const navigate = useNavigate()
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const refreshUnread = useCallback(async () => {
+    try {
+      const data = await adminApi.getUnreadNotificationCount()
+      setUnreadCount(data?.count || 0)
+    } catch {
+      // ignore polling errors
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshUnread()
+    const timer = setInterval(refreshUnread, 30000)
+    return () => clearInterval(timer)
+  }, [refreshUnread])
 
   const handleLogout = () => {
     logout()
@@ -57,14 +77,22 @@ function AdminShell({ setHeaderSlot }) {
             </Link>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
           </div>
-          <div className="min-w-0 flex-1 px-6 py-4 sm:px-8">
-            <div className="mb-3 flex items-center gap-3 lg:hidden">
-              <Link to="/" className="inline-flex shrink-0">
-                <img src="/logo-check-a-review.png" alt="Check A Review" className="h-7 w-auto object-contain" />
-              </Link>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
+          <div className="flex min-w-0 flex-1 items-start gap-4 px-6 py-4 sm:px-8">
+            <div className="min-w-0 flex-1">
+              <div className="mb-3 flex items-center gap-3 lg:hidden">
+                <Link to="/" className="inline-flex shrink-0">
+                  <img src="/logo-check-a-review.png" alt="Check A Review" className="h-7 w-auto object-contain" />
+                </Link>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
+              </div>
+              <div ref={setHeaderSlot} className="min-h-[4.5rem]" />
             </div>
-            <div ref={setHeaderSlot} className="min-h-[4.5rem]" />
+            <div className="shrink-0 pt-1">
+              <NotificationBell
+                unreadCount={unreadCount}
+                onClick={() => setNotificationsOpen(true)}
+              />
+            </div>
           </div>
         </header>
 
@@ -104,6 +132,15 @@ function AdminShell({ setHeaderSlot }) {
           </main>
         </div>
       </div>
+
+      <NotificationPanel
+        open={notificationsOpen}
+        onClose={() => {
+          setNotificationsOpen(false)
+          refreshUnread()
+        }}
+        onUnreadChange={setUnreadCount}
+      />
     </div>
   )
 }
