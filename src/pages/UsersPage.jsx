@@ -29,7 +29,7 @@ export default function UsersPage() {
     if (!canWrite) return
     if (
       !window.confirm(
-        `Remove ${user.role === 'business' ? 'business' : 'reviewer'} account "${user.name}" (${user.email})? This cannot be undone.`,
+        `Remove reviewer account "${user.name}" (${user.email})? This cannot be undone.`,
       )
     ) {
       return
@@ -47,7 +47,7 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader title="Manage Users" description="View and remove reviewer and business owner accounts" />
+      <PageHeader title="Manage Users" description="View and remove reviewer accounts" />
 
       {!canWrite && (
         <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -61,7 +61,6 @@ export default function UsersPage() {
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Name</th>
               <th className="px-4 py-3 font-medium text-gray-700">Email</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Type</th>
               <th className="px-4 py-3 font-medium text-gray-700">Reviews</th>
               <th className="px-4 py-3 font-medium text-gray-700">Verified</th>
               <th className="px-4 py-3 font-medium text-gray-700">Joined</th>
@@ -71,7 +70,7 @@ export default function UsersPage() {
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={canWrite ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={canWrite ? 6 : 5} className="px-4 py-8 text-center text-gray-500">
                   No users found
                 </td>
               </tr>
@@ -80,17 +79,6 @@ export default function UsersPage() {
                 <tr key={user.id} className="border-b border-gray-100">
                   <td className="px-4 py-3 font-medium">{user.name}</td>
                   <td className="px-4 py-3 text-gray-500">{user.email}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        user.role === 'business'
-                          ? 'bg-indigo-100 text-indigo-800'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {user.role === 'business' ? 'Business' : 'Reviewer'}
-                    </span>
-                  </td>
                   <td className="px-4 py-3">{user.review_count}</td>
                   <td className="px-4 py-3">
                     <span
