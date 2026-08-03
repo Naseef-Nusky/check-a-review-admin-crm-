@@ -215,7 +215,6 @@ export default function ReviewsPage() {
                       </Link>
                       <Button
                         size="sm"
-                        variant="ghost"
                         disabled={actionId === review.id}
                         onClick={() => moderate(review.id, REVIEW_STATUS.PUBLISHED)}
                       >
@@ -223,7 +222,7 @@ export default function ReviewsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="danger"
                         disabled={actionId === review.id}
                         onClick={() => moderate(review.id, REVIEW_STATUS.REJECTED)}
                       >
