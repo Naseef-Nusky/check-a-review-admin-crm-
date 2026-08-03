@@ -62,7 +62,7 @@ export default function PendingBusinessesPage() {
                   <div className="flex min-w-0 items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
                       {logoSrc ? (
-                        <img src={logoSrc} alt="" className="h-full w-full object-contain p-1" />
+                        <img src={logoSrc} alt="" className="h-full w-full object-contain" />
                       ) : (
                         <span className="text-sm font-semibold text-slate-500">
                           {(biz.name || 'B').charAt(0).toUpperCase()}

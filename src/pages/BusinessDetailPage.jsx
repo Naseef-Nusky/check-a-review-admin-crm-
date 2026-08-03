@@ -169,7 +169,7 @@ export default function BusinessDetailPage() {
       <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-white p-5 shadow-sm">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl">
           {logoSrc ? (
-            <img src={logoSrc} alt={`${business.name} logo`} className="h-full w-full object-contain p-1" />
+            <img src={logoSrc} alt={`${business.name} logo`} className="h-full w-full object-contain" />
           ) : (
             <span className="text-2xl font-semibold text-slate-300">
               {(business.name || '?').charAt(0).toUpperCase()}
