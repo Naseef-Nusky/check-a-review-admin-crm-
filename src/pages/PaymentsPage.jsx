@@ -27,7 +27,7 @@ export default function PaymentsPage() {
 
   return (
     <div>
-      <PageHeader title="Payments" description="Stripe payment history and transactions" />
+      <PageHeader title="Payments" description="Square payment history and transactions" />
       <div className="card overflow-hidden">
         <table className="data-table">
           <thead className="border-b border-gray-200 bg-gray-50">
@@ -49,7 +49,9 @@ export default function PaymentsPage() {
             ) : (
               payments.map((payment) => (
                 <tr key={payment.id} className="border-b border-gray-100">
-                  <td className="px-4 py-3 font-mono text-xs">{payment.stripe_payment_id || payment.id}</td>
+                  <td className="px-4 py-3 font-mono text-xs">
+                    {payment.square_payment_id || payment.stripe_payment_intent_id || payment.id}
+                  </td>
                   <td className="px-4 py-3 font-medium">{payment.business_name}</td>
                   <td className="px-4 py-3">{formatCurrency(payment.amount)}</td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(payment.created_at)}</td>

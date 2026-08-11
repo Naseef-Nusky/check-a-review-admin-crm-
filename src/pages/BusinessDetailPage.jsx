@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
+import BusinessLogo from '../components/BusinessLogo'
 import { formatDate } from '../utils/format'
 import { REVIEW_STATUS, resolveMediaUrl } from '../utils/constants'
 
@@ -124,8 +125,6 @@ export default function BusinessDetailPage() {
   if (error) return <ErrorMessage message={error} onRetry={() => window.location.reload()} />
   if (!business) return <ErrorMessage message="Business not found" />
 
-  const logoSrc = resolveMediaUrl(business.logo_url)
-
   return (
     <div>
       <PageHeader
@@ -167,15 +166,12 @@ export default function BusinessDetailPage() {
       ) : null}
 
       <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-white p-5 shadow-sm">
-        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl">
-          {logoSrc ? (
-            <img src={logoSrc} alt={`${business.name} logo`} className="h-full w-full object-contain" />
-          ) : (
-            <span className="text-2xl font-semibold text-slate-300">
-              {(business.name || '?').charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
+        <BusinessLogo
+          logoUrl={business.logo_url}
+          name={business.name}
+          className="h-20 w-20 rounded-2xl"
+          textClassName="text-2xl"
+        />
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-semibold text-slate-900">{business.name}</h2>
           <p className="mt-1 text-sm text-slate-500">/{business.slug}</p>
@@ -372,7 +368,12 @@ export default function BusinessDetailPage() {
               <div className="sm:col-span-2">
                 <DetailItem label="Logo URL">
                   {business.logo_url ? (
-                    <a href={logoSrc} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+                    <a
+                      href={resolveMediaUrl(business.logo_url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary-600 hover:underline"
+                    >
                       {business.logo_url}
                     </a>
                   ) : (
@@ -409,8 +410,12 @@ export default function BusinessDetailPage() {
               <DetailItem label="Subscription created">
                 {formatDate(business.subscription_created_at)}
               </DetailItem>
-              <DetailItem label="Stripe customer">{business.stripe_customer_id}</DetailItem>
-              <DetailItem label="Stripe subscription">{business.stripe_subscription_id}</DetailItem>
+              <DetailItem label="Square customer">
+                {business.square_customer_id || business.stripe_customer_id || '—'}
+              </DetailItem>
+              <DetailItem label="Square subscription">
+                {business.square_subscription_id || business.stripe_subscription_id || '—'}
+              </DetailItem>
             </dl>
           </section>
         </div>

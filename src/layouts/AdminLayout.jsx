@@ -12,6 +12,7 @@ import {
   Settings,
   Shield,
   Users,
+  WalletCards,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Button from '../components/Button'
@@ -32,6 +33,7 @@ const sidebarLinks = [
   { to: '/flagged', label: 'Pending reviews', icon: AlertTriangle },
   { to: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { to: '/payments', label: 'Payments', icon: Receipt },
+  { to: '/billing-plans', label: 'Billing plans', icon: WalletCards },
   { to: '/pricing', label: 'Pricing CMS', icon: CreditCard },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]

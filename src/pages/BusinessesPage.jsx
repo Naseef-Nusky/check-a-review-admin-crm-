@@ -8,7 +8,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import CreateBusinessWizard from '../components/CreateBusinessWizard'
 import { formatDate } from '../utils/format'
 import StarRating from '../components/StarRating'
-import { resolveMediaUrl } from '../utils/constants'
+import BusinessLogo from '../components/BusinessLogo'
 
 const PLAN_FILTERS = ['all', 'free', 'starter', 'premium']
 const STATUS_FILTERS = ['all', 'active', 'cancelled', 'past_due', 'trialing']
@@ -274,19 +274,7 @@ export default function BusinessesPage() {
                 <tr key={biz.id} className="border-b border-gray-100 hover:bg-slate-50/80">
                   <td className="px-4 py-3">
                     <Link to={`/businesses/${biz.id}`} className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
-                        {biz.logo_url ? (
-                          <img
-                            src={resolveMediaUrl(biz.logo_url)}
-                            alt=""
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <span className="text-sm font-semibold text-slate-400">
-                            {(biz.name || '?').charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
+                      <BusinessLogo logoUrl={biz.logo_url} name={biz.name} />
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900 hover:text-primary-600">{biz.name}</p>
                         <p className="truncate text-xs text-slate-400">/{biz.slug}</p>

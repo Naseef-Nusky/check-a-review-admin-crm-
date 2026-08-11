@@ -7,6 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 
 const emptyStep = { title: '', description: '' }
+const emptyPlanFeature = { label: '', included: true }
 const emptyPlan = {
   key: '',
   name: '',
@@ -16,11 +17,13 @@ const emptyPlan = {
   badge: '',
   ctaLabel: '',
   highlighted: false,
-  features: [''],
+  users: '1',
+  domains: '1',
+  features: [{ ...emptyPlanFeature }],
 }
 const emptyComparisonRow = {
   label: '',
-  values: { starter: '', plus: '', premium: '', enterprise: '' },
+  values: { starter: false, plus: false, premium: false },
 }
 const emptyComparisonSection = {
   title: '',
@@ -28,7 +31,151 @@ const emptyComparisonSection = {
 }
 const emptyFaq = { question: '', answer: '' }
 
+const PLAN_KEYS = ['starter', 'plus', 'premium']
+const DEFAULT_PLAN_LIMITS = {
+  starter: { users: '1', domains: '1' },
+  plus: { users: '3', domains: '3' },
+  premium: { users: 'Unlimited', domains: 'Unlimited' },
+}
+const LIMIT_FEATURES = [
+  { label: 'Users', field: 'users' },
+  { label: 'Domains', field: 'domains' },
+]
+
+function isLimitFeatureLabel(label) {
+  const normalized = String(label || '')
+    .trim()
+    .toLowerCase()
+  return LIMIT_FEATURES.some((item) => item.label.toLowerCase() === normalized)
+}
+
+function toCheckValue(value) {
+  if (typeof value === 'boolean') return value
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  if (['true', 'yes', 'included', '✓', 'check', 'checked'].includes(normalized)) return true
+  return false
+}
+
+function normalizeComparisonValue(value) {
+  if (typeof value === 'boolean') return value
+  if (value == null) return false
+  const text = String(value).trim()
+  if (!text) return false
+  const normalized = text.toLowerCase()
+  if (['true', 'yes', 'included', '✓', 'check', 'checked'].includes(normalized)) return true
+  if (['false', 'no', 'not included', '—', '-', 'x'].includes(normalized)) return false
+  return text
+}
+
+function normalizePlanFeature(feature) {
+  if (typeof feature === 'string') {
+    return { label: feature, included: true }
+  }
+  return {
+    label: feature?.label || '',
+    included: feature?.included !== false && toCheckValue(feature?.included ?? true),
+  }
+}
+
+function findComparisonValue(sections, planKey, label) {
+  const match = String(label).toLowerCase()
+  for (const section of Array.isArray(sections) ? sections : []) {
+    for (const row of Array.isArray(section?.rows) ? section.rows : []) {
+      if (String(row?.label || '').trim().toLowerCase() === match) {
+        return row?.values?.[planKey]
+      }
+    }
+  }
+  return undefined
+}
+
+function normalizeComparisonSections(sections, plans = []) {
+  const source = Array.isArray(sections) ? sections : []
+  const planKeys = (Array.isArray(plans) ? plans : [])
+    .map((plan) => String(plan?.key || '').trim())
+    .filter(Boolean)
+  const keys = planKeys.length ? planKeys : PLAN_KEYS
+
+  let rows = source
+    .flatMap((section) => (Array.isArray(section?.rows) ? section.rows : []))
+    .map((row) => ({
+      label: row?.label || '',
+      values: keys.reduce((acc, key) => {
+        acc[key] = normalizeComparisonValue(row?.values?.[key])
+        return acc
+      }, {}),
+    }))
+
+  for (const { label, field } of LIMIT_FEATURES) {
+    const existingIndex = rows.findIndex((row) => String(row.label).trim().toLowerCase() === label.toLowerCase())
+    const values = keys.reduce((acc, key) => {
+      const plan = (plans || []).find((item) => item.key === key)
+      const fromPlan = plan?.[field]
+      const fromRow = existingIndex >= 0 ? rows[existingIndex].values?.[key] : undefined
+      const fallback = DEFAULT_PLAN_LIMITS[key]?.[field] || '1'
+      acc[key] = limitText(fromPlan || fromRow, fallback)
+      return acc
+    }, {})
+
+    if (existingIndex >= 0) {
+      rows[existingIndex] = { label, values }
+    } else {
+      rows = [{ label, values }, ...rows]
+    }
+  }
+
+  return [
+    {
+      title: 'Features',
+      rows: rows.length ? rows : [{ ...emptyComparisonRow, values: { ...emptyComparisonRow.values } }],
+    },
+  ]
+}
+
+function defaultLimitsForPlan(planKey) {
+  return DEFAULT_PLAN_LIMITS[planKey] || { users: '1', domains: '1' }
+}
+
+function limitText(value, fallback) {
+  if (typeof value === 'boolean') return fallback
+  const text = String(value ?? '').trim()
+  if (!text || ['true', 'false', 'yes', 'no', '✓', '—', '-'].includes(text.toLowerCase())) {
+    return fallback
+  }
+  return text
+}
+
 function normalizePricing(data) {
+  const rawPlans =
+    Array.isArray(data?.plans) && data.plans.length
+      ? data.plans
+      : PLAN_KEYS.map((key) => ({ ...emptyPlan, key, name: key, ...defaultLimitsForPlan(key) }))
+
+  const plans = rawPlans.map((plan) => {
+    const defaults = defaultLimitsForPlan(plan.key)
+    const users = limitText(
+      plan.users || findComparisonValue(data?.comparisonSections, plan.key, 'Users'),
+      defaults.users,
+    )
+    const domains = limitText(
+      plan.domains || findComparisonValue(data?.comparisonSections, plan.key, 'Domains'),
+      defaults.domains,
+    )
+
+    return {
+      ...emptyPlan,
+      ...plan,
+      users,
+      domains,
+      features:
+        Array.isArray(plan?.features) && plan.features.length
+          ? plan.features.map(normalizePlanFeature)
+          : [{ ...emptyPlanFeature }],
+    }
+  })
+
   return {
     heroTitle: data?.heroTitle || '',
     heroSubtitle: data?.heroSubtitle || '',
@@ -36,13 +183,40 @@ function normalizePricing(data) {
     trustBadge: data?.trustBadge || '',
     logos: Array.isArray(data?.logos) && data.logos.length ? data.logos : [''],
     steps: Array.isArray(data?.steps) && data.steps.length ? data.steps : [{ ...emptyStep }],
-    plans: Array.isArray(data?.plans) && data.plans.length ? data.plans : [{ ...emptyPlan }],
-    comparisonSections:
-      Array.isArray(data?.comparisonSections) && data.comparisonSections.length
-        ? data.comparisonSections
-        : [{ ...emptyComparisonSection }],
+    plans,
+    comparisonSections: normalizeComparisonSections(data?.comparisonSections, plans),
     faqs: Array.isArray(data?.faqs) && data.faqs.length ? data.faqs : [{ ...emptyFaq }],
   }
+}
+
+function syncLimitRowsFromPlans(rows, plans) {
+  let nextRows = Array.isArray(rows) ? [...rows] : []
+  const planKeys = plans.map((plan) => String(plan.key || '').trim()).filter(Boolean)
+
+  for (const { label, field } of LIMIT_FEATURES) {
+    const values = planKeys.reduce((acc, key) => {
+      const plan = plans.find((item) => item.key === key)
+      acc[key] = String(plan?.[field] || '').trim() || defaultLimitsForPlan(key)[field]
+      return acc
+    }, {})
+    const index = nextRows.findIndex((row) => String(row.label).trim().toLowerCase() === label.toLowerCase())
+    if (index >= 0) {
+      nextRows[index] = { label, values: { ...nextRows[index].values, ...values } }
+    } else {
+      nextRows = [{ label, values }, ...nextRows]
+    }
+  }
+
+  return nextRows
+}
+
+function comparisonValueToIncluded(value) {
+  if (typeof value === 'boolean') return value
+  const text = String(value ?? '').trim()
+  if (!text) return false
+  const normalized = text.toLowerCase()
+  if (['false', 'no', 'not included', '—', '-', '0', 'x'].includes(normalized)) return false
+  return true
 }
 
 function SectionCard({ title, description, children }) {
@@ -76,10 +250,6 @@ export default function PricingPage() {
 
   useEffect(load, [])
 
-  const setField = (field, value) => {
-    setPricing((prev) => ({ ...prev, [field]: value }))
-  }
-
   const updateListItem = (field, index, value) => {
     setPricing((prev) => ({
       ...prev,
@@ -87,25 +257,8 @@ export default function PricingPage() {
     }))
   }
 
-  const addListItem = (field, value) => {
-    setPricing((prev) => ({ ...prev, [field]: [...prev[field], value] }))
-  }
-
-  const removeListItem = (field, index) => {
-    setPricing((prev) => ({
-      ...prev,
-      [field]: prev[field].filter((_, itemIndex) => itemIndex !== index),
-    }))
-  }
-
   const updatePlan = (index, field, value) => {
     updateListItem('plans', index, { ...pricing.plans[index], [field]: value })
-  }
-
-  const updatePlanFeature = (planIndex, featureIndex, value) => {
-    const plan = pricing.plans[planIndex]
-    const features = plan.features.map((feature, index) => (index === featureIndex ? value : feature))
-    updatePlan(planIndex, 'features', features)
   }
 
   const updateComparisonSection = (sectionIndex, field, value) => {
@@ -136,20 +289,39 @@ export default function PricingPage() {
     setMessage('')
 
     try {
+      const plans = pricing.plans.map((plan) => ({
+        ...plan,
+        users: String(plan.users || '').trim() || defaultLimitsForPlan(plan.key).users,
+        domains: String(plan.domains || '').trim() || defaultLimitsForPlan(plan.key).domains,
+      }))
+      const comparisonRows = syncLimitRowsFromPlans(pricing.comparisonSections[0]?.rows || [], plans)
+        .filter((row) => String(row.label || '').trim())
+        .map((row) => ({
+          label: row.label.trim(),
+          values: Object.fromEntries(
+            Object.entries(row.values || {}).map(([key, value]) => [key, normalizeComparisonValue(value)]),
+          ),
+        }))
+
       await adminApi.updatePricing({
         ...pricing,
         logos: pricing.logos.map((item) => item.trim()).filter(Boolean),
         steps: pricing.steps.filter((item) => item.title.trim() || item.description.trim()),
-        plans: pricing.plans.map((plan) => ({
+        plans: plans.map((plan) => ({
           ...plan,
-          features: plan.features.map((item) => item.trim()).filter(Boolean),
+          features: comparisonRows
+            .filter((row) => !isLimitFeatureLabel(row.label))
+            .map((row) => ({
+              label: row.label,
+              included: comparisonValueToIncluded(row.values?.[plan.key]),
+            })),
         })),
-        comparisonSections: pricing.comparisonSections
-          .map((section) => ({
-            ...section,
-            rows: section.rows.filter((row) => row.label.trim()),
-          }))
-          .filter((section) => section.title.trim() || section.rows.length),
+        comparisonSections: [
+          {
+            title: 'Features',
+            rows: comparisonRows,
+          },
+        ].filter((section) => section.rows.length),
         faqs: pricing.faqs.filter((item) => item.question.trim() || item.answer.trim()),
       })
       setMessage('Pricing page content saved successfully.')
@@ -162,7 +334,7 @@ export default function PricingPage() {
   }
 
   if (loading) return <LoadingSpinner />
-  if (error && !pricing.heroTitle) return <ErrorMessage message={error} onRetry={load} />
+  if (error && !pricing.plans?.length) return <ErrorMessage message={error} onRetry={load} />
 
   return (
     <div>
@@ -180,129 +352,16 @@ export default function PricingPage() {
           </div>
         ) : null}
 
-        <SectionCard title="Hero copy" description="Top section headline, subtitle, and supporting trust message.">
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="lg:col-span-2">
-              <label className="label-text text-slate-700">Hero title</label>
-              <input
-                className="input-field"
-                value={pricing.heroTitle}
-                onChange={(e) => setField('heroTitle', e.target.value)}
-              />
-            </div>
-            <div className="lg:col-span-2">
-              <label className="label-text text-slate-700">Hero subtitle</label>
-              <textarea
-                className="input-field min-h-28"
-                value={pricing.heroSubtitle}
-                onChange={(e) => setField('heroSubtitle', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label-text text-slate-700">Billing note</label>
-              <textarea
-                className="input-field min-h-28"
-                value={pricing.billingNote}
-                onChange={(e) => setField('billingNote', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label-text text-slate-700">Trust badge</label>
-              <input
-                className="input-field"
-                value={pricing.trustBadge}
-                onChange={(e) => setField('trustBadge', e.target.value)}
-              />
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Trusted-by logos" description="Short brand names shown in the logo strip.">
-          <div className="space-y-3">
-            {pricing.logos.map((logo, index) => (
-              <div key={`logo-${index}`} className="flex gap-3">
-                <input
-                  className="input-field"
-                  value={logo}
-                  onChange={(e) => updateListItem('logos', index, e.target.value)}
-                  placeholder="HubSpot"
-                />
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => removeListItem('logos', index)}
-                  disabled={pricing.logos.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button type="button" variant="outline" onClick={() => addListItem('logos', '')}>
-              <Plus className="h-4 w-4" />
-              Add logo
-            </Button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="How it works" description="The short four-step explanation under the logo strip.">
-          <div className="space-y-4">
-            {pricing.steps.map((step, index) => (
-              <div key={`step-${index}`} className="rounded-2xl border border-border p-4">
-                <div className="grid gap-4 lg:grid-cols-[1fr_2fr_auto]">
-                  <input
-                    className="input-field"
-                    value={step.title}
-                    onChange={(e) => updateListItem('steps', index, { ...step, title: e.target.value })}
-                    placeholder="Pick your plan"
-                  />
-                  <textarea
-                    className="input-field min-h-24"
-                    value={step.description}
-                    onChange={(e) => updateListItem('steps', index, { ...step, description: e.target.value })}
-                    placeholder="Explain this step"
-                  />
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    onClick={() => removeListItem('steps', index)}
-                    disabled={pricing.steps.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            <Button type="button" variant="outline" onClick={() => addListItem('steps', { ...emptyStep })}>
-              <Plus className="h-4 w-4" />
-              Add step
-            </Button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Plans" description="Edit the pricing cards shown at the top of the pricing page.">
+        <SectionCard
+          title="Plans"
+          description="Edit name, price, period, highlight, and user/domain limits for each plan."
+        >
           <div className="space-y-5">
             {pricing.plans.map((plan, index) => (
-              <div key={`plan-${index}`} className="rounded-2xl border border-border p-5">
-                <div className="mb-4 flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-base font-semibold text-ink">Plan {index + 1}</h3>
-                    <p className="text-sm text-ink-muted">Use stable keys like starter, plus, premium, or enterprise.</p>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    onClick={() => removeListItem('plans', index)}
-                    disabled={pricing.plans.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div key={`plan-${plan.key || index}`} className="rounded-2xl border border-border p-5">
+                <h3 className="mb-4 text-base font-semibold text-ink">{plan.name || `Plan ${index + 1}`}</h3>
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div>
-                    <label className="label-text text-slate-700">Plan key</label>
-                    <input className="input-field" value={plan.key} onChange={(e) => updatePlan(index, 'key', e.target.value)} />
-                  </div>
+                <div className="grid gap-4 lg:grid-cols-3">
                   <div>
                     <label className="label-text text-slate-700">Plan name</label>
                     <input className="input-field" value={plan.name} onChange={(e) => updatePlan(index, 'name', e.target.value)} />
@@ -316,22 +375,26 @@ export default function PricingPage() {
                     <input className="input-field" value={plan.period} onChange={(e) => updatePlan(index, 'period', e.target.value)} />
                   </div>
                   <div>
-                    <label className="label-text text-slate-700">Badge</label>
-                    <input className="input-field" value={plan.badge} onChange={(e) => updatePlan(index, 'badge', e.target.value)} />
+                    <label className="label-text text-slate-700">Users</label>
+                    <input
+                      className="input-field"
+                      value={plan.users}
+                      onChange={(e) => updatePlan(index, 'users', e.target.value)}
+                      placeholder="e.g. 1, 3, Unlimited"
+                    />
+                    <p className="mt-1 text-xs text-ink-muted">How many team logins this plan includes.</p>
                   </div>
                   <div>
-                    <label className="label-text text-slate-700">CTA label</label>
-                    <input className="input-field" value={plan.ctaLabel} onChange={(e) => updatePlan(index, 'ctaLabel', e.target.value)} />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <label className="label-text text-slate-700">Description</label>
-                    <textarea
-                      className="input-field min-h-24"
-                      value={plan.description}
-                      onChange={(e) => updatePlan(index, 'description', e.target.value)}
+                    <label className="label-text text-slate-700">Domains</label>
+                    <input
+                      className="input-field"
+                      value={plan.domains}
+                      onChange={(e) => updatePlan(index, 'domains', e.target.value)}
+                      placeholder="e.g. 1, 3, Unlimited"
                     />
+                    <p className="mt-1 text-xs text-ink-muted">How many websites this plan can manage.</p>
                   </div>
-                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700 lg:col-span-3">
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
@@ -341,180 +404,133 @@ export default function PricingPage() {
                     Highlight this plan
                   </label>
                 </div>
-
-                <div className="mt-5 space-y-3">
-                  <p className="text-sm font-medium text-slate-700">Features</p>
-                  {plan.features.map((feature, featureIndex) => (
-                    <div key={`plan-${index}-feature-${featureIndex}`} className="flex gap-3">
-                      <input
-                        className="input-field"
-                        value={feature}
-                        onChange={(e) => updatePlanFeature(index, featureIndex, e.target.value)}
-                      />
-                      <Button
-                        variant="secondary"
-                        type="button"
-                        onClick={() => updatePlan(index, 'features', plan.features.filter((_, i) => i !== featureIndex))}
-                        disabled={plan.features.length === 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => updatePlan(index, 'features', [...plan.features, ''])}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add feature
-                  </Button>
-                </div>
               </div>
             ))}
-
-            <Button type="button" variant="outline" onClick={() => addListItem('plans', { ...emptyPlan })}>
-              <Plus className="h-4 w-4" />
-              Add plan
-            </Button>
           </div>
         </SectionCard>
 
-        <SectionCard title="Comparison table" description="Create sections and rows for the pricing matrix.">
-          <div className="space-y-5">
-            {pricing.comparisonSections.map((section, sectionIndex) => (
-              <div key={`comparison-${sectionIndex}`} className="rounded-2xl border border-border p-5">
-                <div className="mb-4 flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <label className="label-text text-slate-700">Section title</label>
-                    <input
-                      className="input-field"
-                      value={section.title}
-                      onChange={(e) => updateComparisonSection(sectionIndex, 'title', e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    onClick={() => removeListItem('comparisonSections', sectionIndex)}
-                    disabled={pricing.comparisonSections.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+        <SectionCard
+          title="Comparison table"
+          description="Users and Domains come from plan limits above. Other features use ✓ / — ticks."
+        >
+          {(() => {
+            const planColumns = (pricing.plans || [])
+              .map((plan) => ({
+                key: String(plan.key || '').trim(),
+                name: plan.name || plan.key || 'Plan',
+              }))
+              .filter((plan) => plan.key)
+            const columns = planColumns.length
+              ? planColumns
+              : PLAN_KEYS.map((key) => ({ key, name: key }))
+            const rows = pricing.comparisonSections[0]?.rows || []
 
-                <div className="space-y-4">
-                  {section.rows.map((row, rowIndex) => (
-                    <div key={`comparison-${sectionIndex}-row-${rowIndex}`} className="rounded-xl border border-border p-4">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div className="flex-1">
-                          <label className="label-text text-slate-700">Row label</label>
-                          <input
-                            className="input-field"
-                            value={row.label}
-                            onChange={(e) => updateComparisonRow(sectionIndex, rowIndex, 'label', e.target.value)}
-                          />
-                        </div>
-                        <Button
-                          variant="secondary"
-                          type="button"
-                          onClick={() =>
-                            updateComparisonSection(
-                              sectionIndex,
-                              'rows',
-                              section.rows.filter((_, index) => index !== rowIndex),
-                            )
-                          }
-                          disabled={section.rows.length === 1}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="grid gap-3 lg:grid-cols-4">
-                        {['starter', 'plus', 'premium', 'enterprise'].map((planKey) => (
-                          <div key={planKey}>
-                            <label className="label-text capitalize text-slate-700">{planKey}</label>
-                            <input
-                              className="input-field"
-                              value={row.values?.[planKey] ?? ''}
-                              onChange={(e) => updateComparisonValue(sectionIndex, rowIndex, planKey, e.target.value)}
-                              placeholder="Yes / No / Custom"
-                            />
-                          </div>
+            return (
+              <div className="space-y-4">
+                <div className="overflow-x-auto rounded-2xl border border-border">
+                  <table className="min-w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-900 text-white">
+                        <th className="min-w-[220px] px-4 py-3 text-left font-semibold">Feature</th>
+                        {columns.map((plan) => (
+                          <th key={plan.key} className="min-w-[110px] px-3 py-3 text-center font-semibold capitalize">
+                            {plan.name}
+                          </th>
                         ))}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      updateComparisonSection(sectionIndex, 'rows', [
-                        ...section.rows,
-                        { ...emptyComparisonRow, values: { ...emptyComparisonRow.values } },
-                      ])
-                    }
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add row
-                  </Button>
-                </div>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                addListItem('comparisonSections', {
-                  ...emptyComparisonSection,
-                  rows: [{ ...emptyComparisonRow, values: { ...emptyComparisonRow.values } }],
-                })
-              }
-            >
-              <Plus className="h-4 w-4" />
-              Add comparison section
-            </Button>
-          </div>
-        </SectionCard>
+                        <th className="w-14 px-2 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, rowIndex) => {
+                        const limitRow = isLimitFeatureLabel(row.label)
+                        return (
+                          <tr key={`feature-row-${rowIndex}`} className="border-t border-border">
+                            <td className="px-3 py-2">
+                              <input
+                                className="input-field"
+                                value={row.label}
+                                onChange={(e) => updateComparisonRow(0, rowIndex, 'label', e.target.value)}
+                                placeholder="e.g. Review widget"
+                                disabled={limitRow}
+                              />
+                            </td>
+                            {columns.map((planColumn) => {
+                              const value = row.values?.[planColumn.key]
+                              if (limitRow) {
+                                const planIndex = pricing.plans.findIndex((item) => item.key === planColumn.key)
+                                const field = String(row.label).trim().toLowerCase() === 'domains' ? 'domains' : 'users'
+                                return (
+                                  <td key={`${rowIndex}-${planColumn.key}`} className="px-3 py-2 text-center">
+                                    <input
+                                      className="input-field text-center"
+                                      value={planIndex >= 0 ? pricing.plans[planIndex][field] : value || ''}
+                                      onChange={(e) => {
+                                        if (planIndex >= 0) updatePlan(planIndex, field, e.target.value)
+                                      }}
+                                      placeholder="1"
+                                    />
+                                  </td>
+                                )
+                              }
 
-        <SectionCard title="FAQs" description="Answers shown below the comparison table.">
-          <div className="space-y-4">
-            {pricing.faqs.map((faq, index) => (
-              <div key={`faq-${index}`} className="rounded-2xl border border-border p-4">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <label className="label-text text-slate-700">Question</label>
-                    <input
-                      className="input-field"
-                      value={faq.question}
-                      onChange={(e) => updateListItem('faqs', index, { ...faq, question: e.target.value })}
-                    />
-                  </div>
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    onClick={() => removeListItem('faqs', index)}
-                    disabled={pricing.faqs.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                              const checked = Boolean(value)
+                              return (
+                                <td key={`${rowIndex}-${planColumn.key}`} className="px-3 py-2 text-center">
+                                  <button
+                                    type="button"
+                                    aria-label={`${checked ? 'Disable' : 'Enable'} ${planColumn.name} for this feature`}
+                                    onClick={() => updateComparisonValue(0, rowIndex, planColumn.key, !checked)}
+                                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-base font-semibold transition ${
+                                      checked
+                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                        : 'border-slate-200 bg-white text-slate-300 hover:border-slate-300 hover:text-slate-400'
+                                    }`}
+                                  >
+                                    {checked ? '✓' : '—'}
+                                  </button>
+                                </td>
+                              )
+                            })}
+                            <td className="px-2 py-2 text-center">
+                              <Button
+                                variant="secondary"
+                                type="button"
+                                onClick={() =>
+                                  updateComparisonSection(
+                                    0,
+                                    'rows',
+                                    rows.filter((_, index) => index !== rowIndex),
+                                  )
+                                }
+                                disabled={rows.length === 1 || limitRow}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <div>
-                  <label className="label-text text-slate-700">Answer</label>
-                  <textarea
-                    className="input-field min-h-24"
-                    value={faq.answer}
-                    onChange={(e) => updateListItem('faqs', index, { ...faq, answer: e.target.value })}
-                  />
-                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const values = columns.reduce((acc, plan) => {
+                      acc[plan.key] = false
+                      return acc
+                    }, {})
+                    updateComparisonSection(0, 'rows', [...rows, { label: '', values }])
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add feature
+                </Button>
               </div>
-            ))}
-            <Button type="button" variant="outline" onClick={() => addListItem('faqs', { ...emptyFaq })}>
-              <Plus className="h-4 w-4" />
-              Add FAQ
-            </Button>
-          </div>
+            )
+          })()}
         </SectionCard>
 
         <div className="flex justify-end">

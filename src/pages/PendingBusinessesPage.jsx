@@ -7,7 +7,7 @@ import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { formatDate } from '../utils/format'
-import { resolveMediaUrl } from '../utils/constants'
+import BusinessLogo from '../components/BusinessLogo'
 
 export default function PendingBusinessesPage() {
   const [businesses, setBusinesses] = useState([])
@@ -55,20 +55,11 @@ export default function PendingBusinessesPage() {
       ) : (
         <div className="space-y-4">
           {businesses.map((biz) => {
-            const logoSrc = resolveMediaUrl(biz.logo_url)
             return (
               <div key={biz.id} className="card border-amber-200 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
-                      {logoSrc ? (
-                        <img src={logoSrc} alt="" className="h-full w-full object-contain" />
-                      ) : (
-                        <span className="text-sm font-semibold text-slate-500">
-                          {(biz.name || 'B').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <BusinessLogo logoUrl={biz.logo_url} name={biz.name} className="h-12 w-12" />
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900">{biz.name}</p>
                       <p className="mt-0.5 text-sm text-gray-500">{biz.category || 'Uncategorized'}</p>
