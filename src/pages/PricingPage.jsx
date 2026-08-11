@@ -354,7 +354,7 @@ export default function PricingPage() {
 
         <SectionCard
           title="Plans"
-          description="Edit name, price, period, highlight, and user/domain limits for each plan."
+          description="Edit price and limits here. Domains defaults: Starter 1 · Plus 3 · Premium Unlimited (you can change any value)."
         >
           <div className="space-y-5">
             {pricing.plans.map((plan, index) => (
@@ -382,7 +382,7 @@ export default function PricingPage() {
                       onChange={(e) => updatePlan(index, 'users', e.target.value)}
                       placeholder="e.g. 1, 3, Unlimited"
                     />
-                    <p className="mt-1 text-xs text-ink-muted">How many team logins this plan includes.</p>
+                    <p className="mt-1 text-xs text-ink-muted">Team logins included in this plan.</p>
                   </div>
                   <div>
                     <label className="label-text text-slate-700">Domains</label>
@@ -392,7 +392,9 @@ export default function PricingPage() {
                       onChange={(e) => updatePlan(index, 'domains', e.target.value)}
                       placeholder="e.g. 1, 3, Unlimited"
                     />
-                    <p className="mt-1 text-xs text-ink-muted">How many websites this plan can manage.</p>
+                    <p className="mt-1 text-xs text-ink-muted">
+                      Websites this plan can manage. Suggested: Starter 1, Plus 3, Premium Unlimited.
+                    </p>
                   </div>
                   <label className="flex items-center gap-3 text-sm font-medium text-slate-700 lg:col-span-3">
                     <input
