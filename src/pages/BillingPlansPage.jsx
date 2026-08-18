@@ -10,6 +10,13 @@ function centsToDollars(cents) {
   return (Number(cents || 0) / 100).toFixed(2)
 }
 
+function currencySymbol(currency) {
+  const code = String(currency || '').toUpperCase()
+  if (code === 'GBP') return '£'
+  if (code === 'EUR') return 'EUR '
+  return '$'
+}
+
 export default function BillingPlansPage() {
   const [plans, setPlans] = useState([])
   const [priceDraft, setPriceDraft] = useState({})
@@ -58,7 +65,7 @@ export default function BillingPlansPage() {
       const updated = await adminApi.updateBillingPlan(plan.key, {
         name: plan.name,
         amountDollars: Number(priceDraft[plan.key]),
-        currency: 'USD',
+        currency: plan.currency,
         cadence: plan.cadence,
         active: plan.active,
         invitationsPerMonth: plan.invitationsPerMonth,
@@ -72,7 +79,7 @@ export default function BillingPlansPage() {
         ...prev,
         [updated.key]: centsToDollars(updated.monthlyAmountCents ?? updated.amountCents),
       }))
-      setMessage(`${updated.name} saved in USD. Click “Sync to Square” to push the latest dollar price.`)
+      setMessage(`${updated.name} saved in ${updated.currency}. Click “Sync to Square” to push the latest price.`)
     } catch (err) {
       setError(err.message || 'Failed to save plan')
     } finally {
@@ -91,7 +98,7 @@ export default function BillingPlansPage() {
         ...prev,
         [updated.key]: centsToDollars(updated.monthlyAmountCents ?? updated.amountCents),
       }))
-      setMessage(`${updated.name} synced to Square in USD.`)
+      setMessage(`${updated.name} synced to Square in ${updated.currency}.`)
     } catch (err) {
       setError(err.message || 'Failed to sync plan to Square')
     } finally {
@@ -106,7 +113,7 @@ export default function BillingPlansPage() {
     try {
       const updated = await adminApi.syncAllBillingPlans()
       applyPlans(updated || [])
-      setMessage('Starter, Plus, and Premium synced to Square in USD. Enterprise stays sales-led.')
+      setMessage('Starter, Plus, and Premium synced to Square. Enterprise stays sales-led.')
     } catch (err) {
       setError(err.message || 'Failed to sync plans')
     } finally {
@@ -122,7 +129,7 @@ export default function BillingPlansPage() {
       <PageHeader
         kicker="Billing"
         title="Billing plans"
-        description="Annual USD billing for Starter, Plus, and Premium. Enterprise is quoted by sales and is not synced to Square."
+        description="Manage plan prices, currency, and limits here. Enterprise is quoted by sales and is not synced to Square."
       >
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={load} disabled={Boolean(syncingKey || savingKey)}>
@@ -178,10 +185,12 @@ export default function BillingPlansPage() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Price (USD / month)</label>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Price ({plan.currency || 'GBP'} / month)
+                  </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-500">
-                      $
+                      {currencySymbol(plan.currency)}
                     </span>
                     <input
                       type="number"
@@ -195,10 +204,10 @@ export default function BillingPlansPage() {
                     />
                   </div>
                   <p className="mt-1 text-xs text-slate-400">
-                    Monthly price in USD. Yearly Square charge is this amount × 12
+                    Monthly price in {plan.currency || 'GBP'}. Yearly Square charge is this amount × 12
                     {plan.perDomain ? ', multiplied by domains at checkout' : ''}.
                     {plan.monthlyAmountCents
-                      ? ` Annual charge: $${((Number(plan.amountCents) || 0) / 100).toFixed(0)}.`
+                      ? ` Annual charge: ${currencySymbol(plan.currency)}${((Number(plan.amountCents) || 0) / 100).toFixed(0)}.`
                       : ''}
                   </p>
                 </div>
@@ -218,7 +227,15 @@ export default function BillingPlansPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">Currency</label>
-                  <input className="input-field bg-slate-50 text-slate-600" value="USD" readOnly />
+                  <select
+                    className="input-field"
+                    value={plan.currency || 'GBP'}
+                    onChange={(e) => updateLocal(plan.key, 'currency', e.target.value.toUpperCase())}
+                  >
+                    <option value="GBP">GBP</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
                 </div>
                 <label className="mt-7 inline-flex items-center gap-2 text-sm text-slate-700">
                   <input

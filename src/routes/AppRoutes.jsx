@@ -19,6 +19,7 @@ import PaymentsPage from '../pages/PaymentsPage'
 import SettingsPage from '../pages/SettingsPage'
 import PricingPage from '../pages/PricingPage'
 import BillingPlansPage from '../pages/BillingPlansPage'
+import WidgetDesignsPage from '../pages/WidgetDesignsPage'
 
 function LoginRedirect() {
   const { isAuthenticated } = useAuth()
@@ -52,6 +53,7 @@ export default function AppRoutes() {
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="pricing" element={<PricingPage />} />
           <Route path="billing-plans" element={<BillingPlansPage />} />
+          <Route path="widget-designs" element={<WidgetDesignsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
@@ -354,67 +354,8 @@ export default function PricingPage() {
         ) : null}
 
         <SectionCard
-          title="Plans"
-          description="Edit price and limits here. Domains defaults: Starter 1 · Plus 3 · Premium Unlimited (you can change any value)."
-        >
-          <div className="space-y-5">
-            {pricing.plans.map((plan, index) => (
-              <div key={`plan-${plan.key || index}`} className="rounded-2xl border border-border p-5">
-                <h3 className="mb-4 text-base font-semibold text-ink">{plan.name || `Plan ${index + 1}`}</h3>
-
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <div>
-                    <label className="label-text text-slate-700">Plan name</label>
-                    <input className="input-field" value={plan.name} onChange={(e) => updatePlan(index, 'name', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label-text text-slate-700">Price</label>
-                    <input className="input-field" value={plan.price} onChange={(e) => updatePlan(index, 'price', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label-text text-slate-700">Period</label>
-                    <input className="input-field" value={plan.period} onChange={(e) => updatePlan(index, 'period', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label-text text-slate-700">Users</label>
-                    <input
-                      className="input-field"
-                      value={plan.users}
-                      onChange={(e) => updatePlan(index, 'users', e.target.value)}
-                      placeholder="e.g. 1, 3, Unlimited"
-                    />
-                    <p className="mt-1 text-xs text-ink-muted">Team logins included in this plan.</p>
-                  </div>
-                  <div>
-                    <label className="label-text text-slate-700">Domains</label>
-                    <input
-                      className="input-field"
-                      value={plan.domains}
-                      onChange={(e) => updatePlan(index, 'domains', e.target.value)}
-                      placeholder="e.g. 1, 3, Unlimited"
-                    />
-                    <p className="mt-1 text-xs text-ink-muted">
-                      Websites this plan can manage. Suggested: Starter 1, Plus 3, Premium Unlimited.
-                    </p>
-                  </div>
-                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700 lg:col-span-3">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      checked={Boolean(plan.highlighted)}
-                      onChange={(e) => updatePlan(index, 'highlighted', e.target.checked)}
-                    />
-                    Highlight this plan
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard
           title="Comparison table"
-          description="Users and Domains come from plan limits above. Other features use ✓ / — ticks."
+          description="Manage plan comparison rows here. Users and Domains stay editable directly in the table; other features use ✓ / — ticks."
         >
           {(() => {
             const planColumns = (pricing.plans || [])
@@ -517,20 +458,6 @@ export default function PricingPage() {
                   </table>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const values = columns.reduce((acc, plan) => {
-                      acc[plan.key] = false
-                      return acc
-                    }, {})
-                    updateComparisonSection(0, 'rows', [...rows, { label: '', values }])
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add feature
-                </Button>
               </div>
             )
           })()}

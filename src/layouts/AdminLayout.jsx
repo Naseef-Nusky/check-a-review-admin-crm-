@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  PanelsTopLeft,
   Receipt,
   Settings,
   Shield,
@@ -34,6 +35,7 @@ const sidebarLinks = [
   { to: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { to: '/payments', label: 'Payments', icon: Receipt },
   { to: '/billing-plans', label: 'Billing plans', icon: WalletCards },
+  { to: '/widget-designs', label: 'Widget designs', icon: PanelsTopLeft },
   { to: '/pricing', label: 'Pricing CMS', icon: CreditCard },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
