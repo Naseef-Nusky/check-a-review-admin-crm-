@@ -154,10 +154,7 @@ export default function SettingsPage() {
         </div>
         <div>
           <label htmlFor="emailProvider" className="label-text text-slate-700">Email Provider</label>
-          <select id="emailProvider" value={settings.emailProvider} onChange={(e) => setSettings({ ...settings, emailProvider: e.target.value })} className="input-field">
-            <option value="sendgrid">SendGrid</option>
-            <option value="resend">Resend</option>
-          </select>
+          <input id="emailProvider" className="input-field bg-slate-50 text-slate-600" value="SendGrid" readOnly />
         </div>
         <Button type="submit" disabled={saving}>
           {saving ? 'Saving...' : 'Save Settings'}
