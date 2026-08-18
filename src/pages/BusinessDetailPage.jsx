@@ -411,10 +411,10 @@ export default function BusinessDetailPage() {
                 {formatDate(business.subscription_created_at)}
               </DetailItem>
               <DetailItem label="Square customer">
-                {business.square_customer_id || business.stripe_customer_id || '—'}
+                {business.square_customer_id || '—'}
               </DetailItem>
               <DetailItem label="Square subscription">
-                {business.square_subscription_id || business.stripe_subscription_id || '—'}
+                {business.square_subscription_id || '—'}
               </DetailItem>
             </dl>
           </section>

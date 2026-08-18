@@ -23,7 +23,7 @@ const emptyPlan = {
 }
 const emptyComparisonRow = {
   label: '',
-  values: { starter: false, plus: false, premium: false },
+  values: { starter: false, plus: false, premium: false, enterprise: false },
 }
 const emptyComparisonSection = {
   title: '',
@@ -31,11 +31,12 @@ const emptyComparisonSection = {
 }
 const emptyFaq = { question: '', answer: '' }
 
-const PLAN_KEYS = ['starter', 'plus', 'premium']
+const PLAN_KEYS = ['starter', 'plus', 'premium', 'enterprise']
 const DEFAULT_PLAN_LIMITS = {
   starter: { users: '1', domains: '1' },
   plus: { users: '3', domains: '3' },
-  premium: { users: 'Unlimited', domains: 'Unlimited' },
+  premium: { users: '10', domains: 'Unlimited' },
+  enterprise: { users: '1000', domains: 'Unlimited' },
 }
 const LIMIT_FEATURES = [
   { label: 'Users', field: 'users' },

@@ -10,7 +10,7 @@ import { formatDate } from '../utils/format'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
 
-const PLAN_FILTERS = ['all', 'free', 'starter', 'premium']
+const PLAN_FILTERS = ['all', 'free', 'starter', 'plus', 'premium', 'enterprise']
 const STATUS_FILTERS = ['all', 'active', 'cancelled', 'past_due', 'trialing']
 const LISTING_STATUS_FILTERS = ['all', 'pending', 'published', 'rejected']
 

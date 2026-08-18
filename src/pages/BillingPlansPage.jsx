@@ -6,8 +6,13 @@ import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 
+function centsToDollars(cents) {
+  return (Number(cents || 0) / 100).toFixed(2)
+}
+
 export default function BillingPlansPage() {
   const [plans, setPlans] = useState([])
+  const [priceDraft, setPriceDraft] = useState({})
   const [squareConfigured, setSquareConfigured] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -15,12 +20,20 @@ export default function BillingPlansPage() {
   const [savingKey, setSavingKey] = useState('')
   const [syncingKey, setSyncingKey] = useState('')
 
+  const applyPlans = (nextPlans) => {
+    const list = nextPlans || []
+    setPlans(list)
+    setPriceDraft(
+      Object.fromEntries(list.map((plan) => [plan.key, centsToDollars(plan.monthlyAmountCents ?? plan.amountCents)])),
+    )
+  }
+
   const load = async () => {
     setLoading(true)
     setError('')
     try {
       const data = await adminApi.getBillingPlans()
-      setPlans(data.plans || [])
+      applyPlans(data.plans || [])
       setSquareConfigured(Boolean(data.squareConfigured))
     } catch (err) {
       setError(err.message || 'Failed to load billing plans')
@@ -44,13 +57,22 @@ export default function BillingPlansPage() {
     try {
       const updated = await adminApi.updateBillingPlan(plan.key, {
         name: plan.name,
-        amountCents: Math.round(Number(plan.amountCents)),
-        currency: plan.currency,
+        amountDollars: Number(priceDraft[plan.key]),
+        currency: 'USD',
         cadence: plan.cadence,
         active: plan.active,
+        invitationsPerMonth: plan.invitationsPerMonth,
+        widgets: plan.widgets,
+        users: plan.users,
+        domains: plan.domains,
+        integrations: plan.integrations,
       })
       setPlans((prev) => prev.map((row) => (row.key === updated.key ? updated : row)))
-      setMessage(`${updated.name} saved. Click “Sync to Square” to push the latest price.`)
+      setPriceDraft((prev) => ({
+        ...prev,
+        [updated.key]: centsToDollars(updated.monthlyAmountCents ?? updated.amountCents),
+      }))
+      setMessage(`${updated.name} saved in USD. Click “Sync to Square” to push the latest dollar price.`)
     } catch (err) {
       setError(err.message || 'Failed to save plan')
     } finally {
@@ -65,7 +87,11 @@ export default function BillingPlansPage() {
     try {
       const updated = await adminApi.syncBillingPlan(key)
       setPlans((prev) => prev.map((row) => (row.key === updated.key ? updated : row)))
-      setMessage(`${updated.name} synced to Square.`)
+      setPriceDraft((prev) => ({
+        ...prev,
+        [updated.key]: centsToDollars(updated.monthlyAmountCents ?? updated.amountCents),
+      }))
+      setMessage(`${updated.name} synced to Square in USD.`)
     } catch (err) {
       setError(err.message || 'Failed to sync plan to Square')
     } finally {
@@ -79,8 +105,8 @@ export default function BillingPlansPage() {
     setMessage('')
     try {
       const updated = await adminApi.syncAllBillingPlans()
-      setPlans(updated || [])
-      setMessage('Starter and Premium synced to Square.')
+      applyPlans(updated || [])
+      setMessage('Starter, Plus, and Premium synced to Square in USD. Enterprise stays sales-led.')
     } catch (err) {
       setError(err.message || 'Failed to sync plans')
     } finally {
@@ -96,7 +122,7 @@ export default function BillingPlansPage() {
       <PageHeader
         kicker="Billing"
         title="Billing plans"
-        description="Create and update real Square subscription plans used for business upgrades."
+        description="Annual USD billing for Starter, Plus, and Premium. Enterprise is quoted by sales and is not synced to Square."
       >
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={load} disabled={Boolean(syncingKey || savingKey)}>
@@ -152,19 +178,28 @@ export default function BillingPlansPage() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Price (cents)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input-field"
-                    value={plan.amountCents}
-                    onChange={(e) => updateLocal(plan.key, 'amountCents', e.target.value)}
-                  />
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Price (USD / month)</label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-500">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="input-field pl-7"
+                      value={priceDraft[plan.key] ?? ''}
+                      onChange={(e) =>
+                        setPriceDraft((prev) => ({ ...prev, [plan.key]: e.target.value }))
+                      }
+                    />
+                  </div>
                   <p className="mt-1 text-xs text-slate-400">
-                    {(Number(plan.amountCents) / 100 || 0).toLocaleString(undefined, {
-                      style: 'currency',
-                      currency: plan.currency || 'USD',
-                    })}
+                    Monthly price in USD. Yearly Square charge is this amount × 12
+                    {plan.perDomain ? ', multiplied by domains at checkout' : ''}.
+                    {plan.monthlyAmountCents
+                      ? ` Annual charge: $${((Number(plan.amountCents) || 0) / 100).toFixed(0)}.`
+                      : ''}
                   </p>
                 </div>
                 <div>
@@ -183,11 +218,7 @@ export default function BillingPlansPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">Currency</label>
-                  <input
-                    className="input-field uppercase"
-                    value={plan.currency}
-                    onChange={(e) => updateLocal(plan.key, 'currency', e.target.value.toUpperCase())}
-                  />
+                  <input className="input-field bg-slate-50 text-slate-600" value="USD" readOnly />
                 </div>
                 <label className="mt-7 inline-flex items-center gap-2 text-sm text-slate-700">
                   <input
@@ -198,6 +229,27 @@ export default function BillingPlansPage() {
                   Active for checkout
                 </label>
               </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {['invitationsPerMonth', 'widgets', 'users', 'domains', 'integrations'].map((field) => (
+                <div key={field}>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    {field === 'invitationsPerMonth'
+                      ? 'Invitations / month'
+                      : field.charAt(0).toUpperCase() + field.slice(1)}
+                  </label>
+                  <input
+                    className="input-field"
+                    value={
+                      plan[field] != null && Number.isFinite(Number(plan[field]))
+                        ? plan[field]
+                        : plan.limitsLabel?.[field === 'invitationsPerMonth' ? 'invitations' : field] || 'Unlimited'
+                    }
+                    onChange={(e) => updateLocal(plan.key, field, e.target.value)}
+                  />
+                </div>
+              ))}
             </div>
 
             <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
@@ -217,11 +269,19 @@ export default function BillingPlansPage() {
               </Button>
               <Button
                 type="button"
-                disabled={!squareConfigured || Boolean(savingKey || syncingKey)}
+                disabled={
+                  plan.checkout === 'sales' ||
+                  !squareConfigured ||
+                  Boolean(savingKey || syncingKey)
+                }
                 onClick={() => syncPlan(plan.key)}
               >
                 <CloudUpload className="h-4 w-4" />
-                {syncingKey === plan.key ? 'Syncing...' : 'Sync to Square'}
+                {plan.checkout === 'sales'
+                  ? 'Sales only'
+                  : syncingKey === plan.key
+                    ? 'Syncing...'
+                    : 'Sync to Square'}
               </Button>
             </div>
           </div>
