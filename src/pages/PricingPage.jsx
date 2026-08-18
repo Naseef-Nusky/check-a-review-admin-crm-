@@ -342,7 +342,7 @@ export default function PricingPage() {
       <PageHeader
         kicker="Business website"
         title="Pricing CMS"
-        description="Manage the pricing page content shown on the public business website."
+        description="Manage the public pricing page. Plan names, prices, and limits now sync from Billing plans automatically."
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -355,7 +355,7 @@ export default function PricingPage() {
 
         <SectionCard
           title="Comparison table"
-          description="Manage plan comparison rows here. Users and Domains stay editable directly in the table; other features use ✓ / — ticks."
+          description="Manage plan comparison rows here. Plan names, prices, and limits come from Billing plans; this table controls feature visibility."
         >
           {(() => {
             const planColumns = (pricing.plans || [])
