@@ -403,16 +403,45 @@ export default function PricingPage() {
                               if (limitRow) {
                                 const planIndex = pricing.plans.findIndex((item) => item.key === planColumn.key)
                                 const field = String(row.label).trim().toLowerCase() === 'domains' ? 'domains' : 'users'
+                                const current = planIndex >= 0 ? pricing.plans[planIndex][field] : value
+                                const unlimited =
+                                  current == null ||
+                                  !Number.isFinite(Number(current)) ||
+                                  ['unlimited', 'all', 'inf'].includes(String(current).trim().toLowerCase())
+                                const numeric = unlimited ? '' : String(current).trim()
+                                const presets = field === 'domains' ? ['1', '3'] : ['1', '3', '10', '1000']
+                                const options = [...presets]
+                                if (numeric && !options.includes(numeric)) options.push(numeric)
                                 return (
                                   <td key={`${rowIndex}-${planColumn.key}`} className="px-3 py-2 text-center">
-                                    <input
-                                      className="input-field text-center"
-                                      value={planIndex >= 0 ? pricing.plans[planIndex][field] : value || ''}
-                                      onChange={(e) => {
-                                        if (planIndex >= 0) updatePlan(planIndex, field, e.target.value)
-                                      }}
-                                      placeholder="1"
-                                    />
+                                    <div className="flex gap-2">
+                                      <select
+                                        className="input-field text-center"
+                                        value={unlimited ? 'unlimited' : numeric}
+                                        onChange={(e) => {
+                                          if (planIndex >= 0) updatePlan(planIndex, field, e.target.value)
+                                        }}
+                                      >
+                                        {options.map((option) => (
+                                          <option key={option} value={option}>
+                                            {option}
+                                          </option>
+                                        ))}
+                                        <option value="unlimited">Unlimited</option>
+                                      </select>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        className="input-field w-20 text-center"
+                                        disabled={unlimited}
+                                        placeholder="No."
+                                        value={numeric}
+                                        onChange={(e) => {
+                                          if (planIndex >= 0) updatePlan(planIndex, field, e.target.value)
+                                        }}
+                                      />
+                                    </div>
                                   </td>
                                 )
                               }

@@ -249,24 +249,82 @@ export default function BillingPlansPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {['invitationsPerMonth', 'widgets', 'users', 'domains', 'integrations'].map((field) => (
-                <div key={field}>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    {field === 'invitationsPerMonth'
-                      ? 'Invitations / month'
-                      : field.charAt(0).toUpperCase() + field.slice(1)}
-                  </label>
-                  <input
-                    className="input-field"
-                    value={
-                      plan[field] != null && Number.isFinite(Number(plan[field]))
-                        ? plan[field]
-                        : plan.limitsLabel?.[field === 'invitationsPerMonth' ? 'invitations' : field] || 'Unlimited'
-                    }
-                    onChange={(e) => updateLocal(plan.key, field, e.target.value)}
-                  />
-                </div>
-              ))}
+              {['invitationsPerMonth', 'widgets', 'users', 'domains', 'integrations'].map((field) => {
+                const current = plan[field]
+                const unlimited =
+                  current == null ||
+                  !Number.isFinite(Number(current)) ||
+                  ['unlimited', 'all', 'inf'].includes(String(current).trim().toLowerCase())
+                const numeric = unlimited ? '' : String(Math.round(Number(current)))
+                const presets = {
+                  invitationsPerMonth: ['10', '100', '300', '1000'],
+                  users: ['1', '3', '10', '1000'],
+                  domains: ['1', '3'],
+                  integrations: ['0', '15'],
+                }[field]
+                const widgetValue = Number.isFinite(Number(current))
+                  ? Math.min(22, Math.max(0, Math.round(Number(current))))
+                  : 0
+
+                if (field === 'widgets') {
+                  return (
+                    <div key={field}>
+                      <label className="mb-1.5 block text-sm font-medium text-slate-700">Widgets</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="22"
+                        step="1"
+                        className="input-field"
+                        value={widgetValue}
+                        onChange={(e) => {
+                          const next = e.target.value === '' ? 0 : Number(e.target.value)
+                          const clamped = Number.isFinite(next) ? Math.min(22, Math.max(0, Math.round(next))) : 0
+                          updateLocal(plan.key, field, clamped)
+                        }}
+                      />
+                      <p className="mt-1 text-xs text-slate-400">Enter a number from 0 to 22.</p>
+                    </div>
+                  )
+                }
+
+                const options = [...presets]
+                if (numeric && !options.includes(numeric)) options.push(numeric)
+
+                return (
+                  <div key={field}>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {field === 'invitationsPerMonth'
+                        ? 'Invitations / month'
+                        : field.charAt(0).toUpperCase() + field.slice(1)}
+                    </label>
+                    <div className="grid grid-cols-[1fr_6.5rem] gap-2">
+                      <select
+                        className="input-field"
+                        value={unlimited ? 'unlimited' : numeric}
+                        onChange={(e) => updateLocal(plan.key, field, e.target.value)}
+                      >
+                        {options.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                        <option value="unlimited">{field === 'integrations' ? 'All / Unlimited' : 'Unlimited'}</option>
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="input-field"
+                        disabled={unlimited}
+                        placeholder="No."
+                        value={numeric}
+                        onChange={(e) => updateLocal(plan.key, field, e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
             <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
