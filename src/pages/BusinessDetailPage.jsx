@@ -199,9 +199,9 @@ export default function BusinessDetailPage() {
       </div>
 
       {business.status === 'pending' ? (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p className="text-sm text-amber-900">This listing is waiting for approval before it appears publicly.</p>
-          <div className="flex gap-2">
+          <div className="action-row">
             <button
               type="button"
               disabled={moderating}
@@ -222,11 +222,12 @@ export default function BusinessDetailPage() {
         </div>
       ) : null}
 
-      <div className="mb-6 flex gap-2 border-b border-border">
+      <div className="mb-6 border-b border-border">
+        <div className="tab-scroll">
         <button
           type="button"
           onClick={() => setTab('overview')}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+          className={`shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium transition ${
             activeTab === 'overview'
               ? 'border-primary-600 text-primary-700'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -237,7 +238,7 @@ export default function BusinessDetailPage() {
         <button
           type="button"
           onClick={() => setTab('reviews')}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+          className={`shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium transition ${
             activeTab === 'reviews'
               ? 'border-primary-600 text-primary-700'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -250,6 +251,7 @@ export default function BusinessDetailPage() {
             </span>
           ) : null}
         </button>
+        </div>
       </div>
 
       {activeTab === 'reviews' ? (

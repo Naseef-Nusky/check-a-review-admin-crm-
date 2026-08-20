@@ -98,8 +98,8 @@ export default function ReviewsPage() {
       <PageHeader title="Moderate Reviews" description="View review details, replies, and moderate content" />
 
       <div className="card mb-4 p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,1fr))_auto]">
-          <div className="relative">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,1fr))_auto]">
+          <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
@@ -138,7 +138,7 @@ export default function ReviewsPage() {
         </p>
       </div>
 
-      <div className="card overflow-x-auto">
+      <div className="card table-scroll">
         <table className="data-table min-w-[1000px]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>

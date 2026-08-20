@@ -159,7 +159,7 @@ export default function BillingPlansPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {plans.map((plan) => (
-          <div key={plan.key} className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+          <div key={plan.key} className="rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{plan.key}</p>

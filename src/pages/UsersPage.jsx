@@ -55,8 +55,8 @@ export default function UsersPage() {
         </p>
       )}
 
-      <div className="card overflow-hidden">
-        <table className="data-table">
+      <div className="card table-scroll">
+        <table className="data-table min-w-[44rem]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Name</th>

@@ -74,7 +74,7 @@ export default function ReviewDetailPage() {
             {review.status}
           </span>
           <span className="text-sm text-slate-500">{formatDate(review.created_at)}</span>
-          <div className="ml-auto flex gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
             <Button
               size="sm"
               disabled={actionId !== null || review.status === REVIEW_STATUS.PUBLISHED}

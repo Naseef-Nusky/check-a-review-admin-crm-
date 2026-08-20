@@ -58,6 +58,7 @@
     font-family: var(--font-sans);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     letter-spacing: -0.011em;
+    overflow-x: hidden;
   }
 
   h1,
@@ -69,6 +70,13 @@
 
   p {
     text-wrap: pretty;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
   }
 }
 
@@ -100,12 +108,12 @@
   }
 
   .stat-card {
-    @apply rounded-2xl border border-border bg-surface p-6;
+    @apply rounded-2xl border border-border bg-surface p-4 sm:p-6;
     box-shadow: var(--shadow-soft);
   }
 
   .stat-value {
-    @apply text-3xl font-semibold tracking-tight text-ink tabular-nums;
+    @apply text-2xl font-semibold tracking-tight text-ink tabular-nums sm:text-3xl;
   }
 
   .stat-label {
@@ -121,11 +129,35 @@
   }
 
   .data-table th {
-    @apply px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500;
+    @apply px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-4;
   }
 
   .data-table td {
-    @apply border-b border-slate-100 px-4 py-3.5 text-slate-700;
+    @apply border-b border-slate-100 px-3 py-3.5 text-slate-700 sm:px-4;
+  }
+
+  /* Wide tables scroll horizontally on phones without blowing out the page */
+  .table-scroll {
+    @apply -mx-1 overflow-x-auto overscroll-x-contain sm:mx-0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-scroll > table,
+  .table-scroll .data-table {
+    min-width: 40rem;
+  }
+
+  .filter-grid {
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))_auto];
+  }
+
+  .tab-scroll {
+    @apply -mx-1 flex gap-1 overflow-x-auto overscroll-x-contain px-1 pb-px sm:mx-0 sm:px-0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .action-row {
+    @apply flex flex-wrap gap-2;
   }
 
   .badge {

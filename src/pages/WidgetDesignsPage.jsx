@@ -174,12 +174,12 @@ export default function WidgetDesignsPage() {
         description="Browse all widget styles available across the platform."
       />
 
-      <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-5">
         <p className="text-sm text-slate-500">All {WIDGET_CATALOG.length} widget styles currently available.</p>
 
-        <div className="mt-5 grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:gap-5 md:grid-cols-2 2xl:grid-cols-3">
           {WIDGET_CATALOG.map((widget, index) => (
-            <div key={widget.id} className="overflow-hidden rounded-3xl border border-border bg-slate-50 p-4 shadow-sm">
+            <div key={widget.id} className="overflow-hidden rounded-3xl border border-border bg-slate-50 p-3 shadow-sm sm:p-4">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Widget {index + 1}</p>

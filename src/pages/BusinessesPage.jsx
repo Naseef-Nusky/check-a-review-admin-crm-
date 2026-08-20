@@ -150,8 +150,8 @@ export default function BusinessesPage() {
       ) : null}
 
       <div className="card mb-4 p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))_auto]">
-          <div className="relative">
+        <div className="filter-grid">
+          <div className="relative sm:col-span-2 2xl:col-span-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
@@ -244,7 +244,7 @@ export default function BusinessesPage() {
         }}
       />
 
-      <div className="card overflow-x-auto">
+      <div className="card table-scroll">
         <table className="data-table min-w-[1100px]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>

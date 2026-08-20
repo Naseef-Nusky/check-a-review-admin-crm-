@@ -55,19 +55,19 @@ export default function FlaggedReviewsPage() {
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => (
-            <div key={review.id} className="card border-amber-200 p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
+            <div key={review.id} className="card border-amber-200 p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-gray-900">{review.business_name}</span>
-                    <span className="text-gray-400">•</span>
+                    <span className="hidden text-gray-400 sm:inline">•</span>
                     <span className="text-sm text-gray-500">{review.author_name || 'Customer'}</span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">{review.author_email || 'No email'}</p>
+                  <p className="mt-1 text-xs text-slate-500 break-all">{review.author_email || 'No email'}</p>
                   <p className="mt-2 text-sm text-gray-600">{review.content}</p>
                   <p className="mt-1 text-xs text-gray-400">{formatDate(review.created_at)}</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-row flex-wrap items-center gap-2 sm:flex-col sm:items-end">
                   {review.ai_flags?.length > 0 && (
                     <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">
                       {review.ai_flags.join(', ')}
@@ -78,7 +78,7 @@ export default function FlaggedReviewsPage() {
                   </span>
                 </div>
               </div>
-              <div className="mt-4 flex gap-2">
+              <div className="action-row mt-4">
                 <Link
                   to={`/reviews/${review.id}`}
                   className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"

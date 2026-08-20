@@ -372,10 +372,10 @@ export default function PricingPage() {
             return (
               <div className="space-y-4">
                 <div className="overflow-x-auto rounded-2xl border border-border">
-                  <table className="min-w-full border-collapse text-sm">
+                  <table className="min-w-[52rem] border-collapse text-sm">
                     <thead>
                       <tr className="bg-slate-900 text-white">
-                        <th className="min-w-[220px] px-4 py-3 text-left font-semibold">Feature</th>
+                        <th className="min-w-[160px] px-3 py-3 text-left font-semibold sm:min-w-[220px] sm:px-4">Feature</th>
                         {columns.map((plan) => (
                           <th key={plan.key} className="min-w-[110px] px-3 py-3 text-center font-semibold capitalize">
                             {plan.name}
@@ -492,8 +492,8 @@ export default function PricingPage() {
           })()}
         </SectionCard>
 
-        <div className="flex justify-end">
-          <Button type="submit" size="lg" disabled={saving}>
+        <div className="flex justify-stretch sm:justify-end">
+          <Button type="submit" size="lg" disabled={saving} className="w-full sm:w-auto">
             {saving ? 'Saving pricing page...' : 'Save pricing page'}
           </Button>
         </div>

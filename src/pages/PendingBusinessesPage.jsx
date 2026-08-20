@@ -56,14 +56,14 @@ export default function PendingBusinessesPage() {
         <div className="space-y-4">
           {businesses.map((biz) => {
             return (
-              <div key={biz.id} className="card border-amber-200 p-5">
-                <div className="flex items-start justify-between gap-4">
+              <div key={biz.id} className="card border-amber-200 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="flex min-w-0 items-start gap-3">
                     <BusinessLogo logoUrl={biz.logo_url} name={biz.name} className="h-12 w-12" />
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900">{biz.name}</p>
                       <p className="mt-0.5 text-sm text-gray-500">{biz.category || 'Uncategorized'}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-500 break-all">
                         {biz.owner_name || 'Owner'} · {biz.owner_email || biz.email || 'No email'}
                       </p>
                       {biz.website ? (
@@ -72,11 +72,11 @@ export default function PendingBusinessesPage() {
                       <p className="mt-1 text-xs text-gray-400">Submitted {formatDate(biz.created_at)}</p>
                     </div>
                   </div>
-                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                  <span className="w-fit rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                     Pending
                   </span>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="action-row mt-4">
                   <Link
                     to={`/businesses/${biz.id}`}
                     className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"

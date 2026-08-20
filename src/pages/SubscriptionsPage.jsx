@@ -28,8 +28,8 @@ export default function SubscriptionsPage() {
   return (
     <div>
       <PageHeader title="Subscription Plans" description="Manage business subscriptions" />
-      <div className="card overflow-hidden">
-        <table className="data-table">
+      <div className="card table-scroll">
+        <table className="data-table min-w-[40rem]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Business</th>

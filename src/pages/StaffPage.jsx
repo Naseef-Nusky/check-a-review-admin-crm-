@@ -142,8 +142,8 @@ export default function StaffPage() {
         </p>
       )}
 
-      <div className="card overflow-hidden">
-        <table className="data-table">
+      <div className="card table-scroll">
+        <table className="data-table min-w-[48rem]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Name</th>
@@ -213,9 +213,9 @@ export default function StaffPage() {
       </div>
 
       {modalOpen && isSuperAdmin && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-10">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:px-4 sm:py-10">
           <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" onClick={closeModal} aria-hidden="true" />
-          <div className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="relative z-10 max-h-[96vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6">
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold text-ink">

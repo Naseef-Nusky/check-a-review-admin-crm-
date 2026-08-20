@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   Building2,
@@ -7,6 +7,7 @@ import {
   CreditCard,
   LayoutDashboard,
   LogOut,
+  Menu,
   MessageSquare,
   PanelsTopLeft,
   Receipt,
@@ -14,6 +15,7 @@ import {
   Shield,
   Users,
   WalletCards,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Button from '../components/Button'
@@ -45,10 +47,48 @@ const headerBg = {
     'radial-gradient(circle at 20% 0%, rgba(255, 64, 129, 0.35), transparent 45%), linear-gradient(180deg, #0f172a 0%, #111827 100%)',
 }
 
+function SidebarNav({ onNavigate }) {
+  return (
+    <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+      {sidebarLinks.map((link) => (
+        <NavLink
+          key={link.to}
+          to={link.to}
+          end={link.end}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            `sidebar-link flex items-center gap-3 ${isActive ? 'sidebar-link-active' : ''}`
+          }
+        >
+          <NavIcon icon={link.icon} />
+          {link.label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
+
+function SidebarAccount({ user, isViewer, onLogout }) {
+  return (
+    <div className="border-t border-border p-4">
+      <p className="truncate text-sm font-medium text-ink">{user?.name}</p>
+      <p className="truncate text-xs text-ink-muted">{user?.email}</p>
+      <p className="mt-1 text-xs font-medium text-primary-600">{crmRoleLabel(user?.role)}</p>
+      {isViewer ? <p className="mt-1 text-xs text-slate-500">Read-only access</p> : null}
+      <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={onLogout}>
+        <LogOut className="h-4 w-4 stroke-[1.5]" strokeWidth={1.5} aria-hidden="true" />
+        Logout
+      </Button>
+    </div>
+  )
+}
+
 function AdminShell({ setHeaderSlot }) {
   const { user, logout, isViewer } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
   const refreshUnread = useCallback(async () => {
@@ -66,6 +106,23 @@ function AdminShell({ setHeaderSlot }) {
     return () => clearInterval(timer)
   }, [refreshUnread])
 
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMobileNavOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [mobileNavOpen])
+
   const handleLogout = () => {
     logout()
     navigate('/login')
@@ -74,68 +131,86 @@ function AdminShell({ setHeaderSlot }) {
   return (
     <div className="admin-shell min-h-screen bg-surface-muted">
       <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col">
-        <header className="flex border-b border-slate-800" style={headerBg}>
-          <div className="hidden w-72 shrink-0 items-center gap-3 border-r border-white/10 px-6 py-4 lg:flex">
-            <Link to="/" className="inline-flex shrink-0">
-              <img src="/logo-check-a-review.png" alt="Check A Review" className="h-8 w-auto object-contain" />
-            </Link>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
-          </div>
-          <div className="flex min-w-0 flex-1 items-start gap-4 px-6 py-4 sm:px-8">
-            <div className="min-w-0 flex-1">
-              <div className="mb-3 flex items-center gap-3 lg:hidden">
-                <Link to="/" className="inline-flex shrink-0">
-                  <img src="/logo-check-a-review.png" alt="Check A Review" className="h-7 w-auto object-contain" />
-                </Link>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
-              </div>
-              <div ref={setHeaderSlot} className="min-h-[4.5rem]" />
+        <header className="sticky top-0 z-40 border-b border-slate-800" style={headerBg}>
+          <div className="flex items-start gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-0">
+            <div className="hidden w-72 shrink-0 items-center gap-3 border-r border-white/10 px-6 py-1 lg:flex">
+              <Link to="/" className="inline-flex shrink-0">
+                <img src="/logo-check-a-review.png" alt="Check A Review" className="h-8 w-auto object-contain" />
+              </Link>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
             </div>
-            <div className="shrink-0 pt-1">
-              <NotificationBell
-                unreadCount={unreadCount}
-                onClick={() => setNotificationsOpen(true)}
-              />
+
+            <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-4 lg:px-8">
+              <button
+                type="button"
+                className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-200 transition hover:bg-white/10 hover:text-white lg:hidden"
+                aria-label="Open navigation menu"
+                aria-expanded={mobileNavOpen}
+                onClick={() => setMobileNavOpen(true)}
+              >
+                <Menu className="h-5 w-5" strokeWidth={1.5} />
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex items-center gap-3 lg:hidden">
+                  <Link to="/" className="inline-flex shrink-0">
+                    <img src="/logo-check-a-review.png" alt="Check A Review" className="h-7 w-auto object-contain" />
+                  </Link>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-300">Admin CRM</p>
+                </div>
+                <div ref={setHeaderSlot} className="min-h-[3.5rem] sm:min-h-[4.5rem]" />
+              </div>
+
+              <div className="shrink-0 pt-1">
+                <NotificationBell
+                  unreadCount={unreadCount}
+                  onClick={() => setNotificationsOpen(true)}
+                />
+              </div>
             </div>
           </div>
         </header>
 
         <div className="flex min-h-0 flex-1">
           <aside className="hidden w-72 shrink-0 border-r border-border bg-white lg:flex lg:flex-col">
-            <nav className="flex-1 space-y-1 p-4">
-              {sidebarLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.end}
-                  className={({ isActive }) =>
-                    `sidebar-link flex items-center gap-3 ${isActive ? 'sidebar-link-active' : ''}`
-                  }
-                >
-                  <NavIcon icon={link.icon} />
-                  {link.label}
-                </NavLink>
-              ))}
-            </nav>
-            <div className="border-t border-border p-4">
-              <p className="truncate text-sm font-medium text-ink">{user?.name}</p>
-              <p className="truncate text-xs text-ink-muted">{user?.email}</p>
-              <p className="mt-1 text-xs font-medium text-primary-600">{crmRoleLabel(user?.role)}</p>
-              {isViewer && (
-                <p className="mt-1 text-xs text-slate-500">Read-only access</p>
-              )}
-              <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 stroke-[1.5]" strokeWidth={1.5} aria-hidden="true" />
-                Logout
-              </Button>
-            </div>
+            <SidebarNav />
+            <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
           </aside>
 
-          <main className="min-w-0 flex-1 p-6 sm:p-8">
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
             <Outlet />
           </main>
         </div>
       </div>
+
+      {mobileNavOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+            aria-label="Close navigation menu"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside className="absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col bg-white shadow-2xl ring-1 ring-slate-900/5">
+            <div className="flex items-center justify-between border-b border-border px-4 py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <img src="/logo-check-a-review.png" alt="" className="h-7 w-auto object-contain" />
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-600">Menu</p>
+              </div>
+              <button
+                type="button"
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close navigation"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                <X className="h-5 w-5" strokeWidth={1.5} />
+              </button>
+            </div>
+            <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
+            <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
+          </aside>
+        </div>
+      ) : null}
 
       <NotificationPanel
         open={notificationsOpen}

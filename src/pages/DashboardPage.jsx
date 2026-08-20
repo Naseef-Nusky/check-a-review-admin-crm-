@@ -42,7 +42,7 @@ export default function DashboardPage() {
         <StatCard label="Total revenue" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Moderation</p>
@@ -59,7 +59,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Moderation</p>

@@ -109,7 +109,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader title="Website Settings" description="Configure platform settings and email branding" />
       {error && <ErrorMessage message={error} onRetry={load} />}
-      <form onSubmit={handleSubmit} className="card max-w-xl space-y-5 p-6 sm:p-8">
+      <form onSubmit={handleSubmit} className="card max-w-xl space-y-5 p-4 sm:p-6 lg:p-8">
         {message && (
           <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{message}</div>
         )}

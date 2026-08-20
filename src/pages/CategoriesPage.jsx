@@ -223,7 +223,7 @@ export default function CategoriesPage() {
       )}
 
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Add main category</h2>
           <p className="mt-1 text-sm text-slate-500">Create a top-level category such as Restaurants & Bars.</p>
           <form onSubmit={handleCreateMain} className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -244,7 +244,7 @@ export default function CategoriesPage() {
           </form>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Add subcategory</h2>
           <p className="mt-1 text-sm text-slate-500">Add a subcategory under an existing main category.</p>
           <form onSubmit={handleCreateSub} className="mt-4 space-y-3">

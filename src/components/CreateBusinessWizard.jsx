@@ -34,7 +34,7 @@ function SelectChevron() {
 
 function ProgressSteps({ step }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500 sm:gap-x-4">
       {STEPS.map((label, index) => {
         const complete = index < step
         const current = index === step
@@ -51,7 +51,7 @@ function ProgressSteps({ step }) {
             >
               {complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : index + 1}
             </span>
-            <span className={current ? 'font-semibold text-slate-800' : ''}>{label}</span>
+            <span className={`hidden sm:inline ${current ? 'font-semibold text-slate-800' : ''}`}>{label}</span>
           </div>
         )
       })}
@@ -167,11 +167,11 @@ Contact: ${form.firstName} ${form.lastName}`.trim(),
   ]
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-8">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" onClick={close} aria-hidden="true" />
 
-      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-[0_30px_90px_rgb(15_23_42/0.25)]">
-        <div className="border-b border-border px-6 py-5">
+      <div className="relative flex max-h-[96vh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-border bg-white shadow-[0_30px_90px_rgb(15_23_42/0.25)] sm:max-h-[92vh] sm:rounded-2xl">
+        <div className="border-b border-border px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Create a business</h2>
@@ -193,8 +193,8 @@ Contact: ${form.firstName} ${form.lastName}`.trim(),
         </div>
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <h3 className="text-xl font-semibold tracking-tight text-slate-900">{titles[step]}</h3>
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <h3 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">{titles[step]}</h3>
 
             {error ? (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -457,7 +457,7 @@ Contact: ${form.firstName} ${form.lastName}`.trim(),
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-4 sm:px-6">
             {step > 0 ? (
               <button
                 type="button"
