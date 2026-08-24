@@ -204,10 +204,10 @@ export default function BillingPlansPage() {
                     />
                   </div>
                   <p className="mt-1 text-xs text-slate-400">
-                    Monthly price in {plan.currency || 'GBP'}. Yearly Square charge is this amount × 12
+                    Monthly price in {plan.currency || 'GBP'} billed each month
                     {plan.perDomain ? ', multiplied by domains at checkout' : ''}.
                     {plan.monthlyAmountCents
-                      ? ` Annual charge: ${currencySymbol(plan.currency)}${((Number(plan.amountCents) || 0) / 100).toFixed(0)}.`
+                      ? ` Charge: ${currencySymbol(plan.currency)}${((Number(plan.amountCents) || 0) / 100).toFixed(0)} / month.`
                       : ''}
                   </p>
                 </div>
