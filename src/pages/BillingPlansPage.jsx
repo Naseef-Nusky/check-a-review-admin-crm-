@@ -113,7 +113,7 @@ export default function BillingPlansPage() {
     try {
       const updated = await adminApi.syncAllBillingPlans()
       applyPlans(updated || [])
-      setMessage('Starter, Plus, and Premium synced to Square. Enterprise stays sales-led.')
+      setMessage('Starter, Plus, and Premium synced to Square.')
     } catch (err) {
       setError(err.message || 'Failed to sync plans')
     } finally {
@@ -129,7 +129,7 @@ export default function BillingPlansPage() {
       <PageHeader
         kicker="Billing"
         title="Billing plans"
-        description="Manage plan prices, currency, and limits here. Enterprise is quoted by sales and is not synced to Square."
+        description="Manage plan prices, currency, and limits here. Changes sync to Square for Starter, Plus, and Premium."
       >
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={load} disabled={Boolean(syncingKey || savingKey)}>

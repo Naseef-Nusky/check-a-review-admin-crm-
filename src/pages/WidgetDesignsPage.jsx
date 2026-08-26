@@ -22,7 +22,7 @@ const WIDGET_CATALOG = [
   { id: 'quote-spotlight', name: 'Quote spotlight', description: 'Single large testimonial with score.', tone: 'light' },
   { id: 'premium-carousel', name: 'Premium carousel', description: 'Rich TrustScore and testimonial layout.', tone: 'dark' },
   { id: 'insights-teaser', name: 'Insights teaser', description: 'Score plus trend-style summary for dashboards.', tone: 'brand' },
-  { id: 'enterprise-wall', name: 'Enterprise review wall', description: 'Largest testimonial wall for brand sites.', tone: 'dark' },
+  { id: 'enterprise-wall', name: 'Large review wall', description: 'Largest testimonial wall for brand sites.', tone: 'dark' },
 ]
 
 function PreviewShell({ tone = 'light', children }) {
