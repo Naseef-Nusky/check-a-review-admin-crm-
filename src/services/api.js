@@ -69,6 +69,7 @@ export const adminApi = {
   moderateBusiness: (id, status) => api.patch(`/admin/businesses/${id}/moderate`, { status }),
   getSubscriptions: () => api.get('/admin/subscriptions'),
   getPayments: () => api.get('/admin/payments'),
+  getBusinessPayments: (id) => api.get(`/admin/businesses/${id}/payments`),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
   uploadSiteLogo: (file) => {

@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
-import { formatDate } from '../utils/format'
+import { formatCurrency, formatDate } from '../utils/format'
 import { REVIEW_STATUS, resolveMediaUrl } from '../utils/constants'
 
 const statusColors = {
@@ -34,6 +34,7 @@ export default function BusinessDetailPage() {
 
   const [business, setBusiness] = useState(null)
   const [reviews, setReviews] = useState([])
+  const [payments, setPayments] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsError, setReviewsError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -55,9 +56,13 @@ export default function BusinessDetailPage() {
 
     ;(async () => {
       try {
-        const biz = await adminApi.getBusiness(id)
+        const [biz, history] = await Promise.all([
+          adminApi.getBusiness(id),
+          adminApi.getBusinessPayments(id).catch(() => []),
+        ])
         if (cancelled) return
         setBusiness(biz)
+        setPayments(history || [])
         setError('')
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load business')
@@ -405,10 +410,22 @@ export default function BusinessDetailPage() {
               <DetailItem label="Plan">
                 <span className="capitalize">{business.plan || 'free'}</span>
               </DetailItem>
+              <DetailItem label="Pending plan">
+                {business.pending_plan ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium capitalize text-amber-800">
+                    {business.pending_plan}
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </DetailItem>
               <DetailItem label="Status">
-                <span className="capitalize">{business.subscription_status || '—'}</span>
+                <span className="capitalize">{(business.subscription_status || '—').replace('_', ' ')}</span>
               </DetailItem>
               <DetailItem label="Period end">{formatDate(business.current_period_end)}</DetailItem>
+              <DetailItem label="Subscription updated">
+                {formatDate(business.subscription_updated_at || business.subscription_created_at)}
+              </DetailItem>
               <DetailItem label="Subscription created">
                 {formatDate(business.subscription_created_at)}
               </DetailItem>
@@ -419,6 +436,47 @@ export default function BusinessDetailPage() {
                 {business.square_subscription_id || '—'}
               </DetailItem>
             </dl>
+          </section>
+
+          <section className="card p-6 sm:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-base font-semibold text-slate-900">Payment history</h3>
+              <Link to="/payments" className="text-sm font-medium text-primary-700 hover:underline">
+                View all payments
+              </Link>
+            </div>
+            <div className="mt-4 overflow-x-auto">
+              <table className="data-table min-w-[36rem]">
+                <thead className="border-b border-gray-200 bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Date</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Plan</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Amount</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-6 text-center text-sm text-gray-500">
+                        No payments recorded for this business yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    payments.map((payment) => (
+                      <tr key={payment.id} className="border-b border-gray-100">
+                        <td className="px-3 py-2 text-sm text-gray-600">{formatDate(payment.created_at)}</td>
+                        <td className="px-3 py-2 text-sm capitalize">{payment.plan || '—'}</td>
+                        <td className="px-3 py-2 text-sm font-medium">
+                          {formatCurrency(payment.amount, payment.currency)}
+                        </td>
+                        <td className="px-3 py-2 text-sm capitalize">{payment.status || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       )}

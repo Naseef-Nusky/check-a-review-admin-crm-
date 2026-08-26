@@ -7,11 +7,16 @@ export function formatDate(value) {
   })
 }
 
-export function formatCurrency(cents) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format((cents || 0) / 100)
+export function formatCurrency(cents, currency = 'USD') {
+  const code = String(currency || 'USD').toUpperCase()
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: code,
+    }).format((Number(cents) || 0) / 100)
+  } catch {
+    return `${code} ${((Number(cents) || 0) / 100).toFixed(2)}`
+  }
 }
 
 export function capitalize(value) {
