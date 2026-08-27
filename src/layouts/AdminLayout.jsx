@@ -30,10 +30,10 @@ const sidebarLinks = [
   { to: '/users', label: 'Users', icon: Users },
   { to: '/staff', label: 'CRM Team', icon: Shield },
   { to: '/businesses', label: 'Businesses', icon: Building2, end: true },
-  { to: '/pending-businesses', label: 'Pending businesses', icon: AlertTriangle },
+  { to: '/pending-businesses', label: 'Pending businesses', icon: AlertTriangle, badgeKey: 'pendingBusinesses' },
   { to: '/categories', label: 'Categories', icon: FolderTree },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
-  { to: '/flagged', label: 'Pending reviews', icon: AlertTriangle },
+  { to: '/flagged', label: 'Pending reviews', icon: AlertTriangle, badgeKey: 'pendingReviews' },
   { to: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { to: '/payments', label: 'Payments', icon: Receipt },
   { to: '/billing-plans', label: 'Billing plans', icon: WalletCards },
@@ -47,23 +47,37 @@ const headerBg = {
     'radial-gradient(circle at 20% 0%, rgba(255, 64, 129, 0.35), transparent 45%), linear-gradient(180deg, #0f172a 0%, #111827 100%)',
 }
 
-function SidebarNav({ onNavigate }) {
+function formatBadgeCount(count) {
+  const value = Number(count) || 0
+  if (value <= 0) return null
+  return value > 99 ? '99+' : String(value)
+}
+
+function SidebarNav({ onNavigate, badges = {} }) {
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-      {sidebarLinks.map((link) => (
-        <NavLink
-          key={link.to}
-          to={link.to}
-          end={link.end}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            `sidebar-link flex items-center gap-3 ${isActive ? 'sidebar-link-active' : ''}`
-          }
-        >
-          <NavIcon icon={link.icon} />
-          {link.label}
-        </NavLink>
-      ))}
+      {sidebarLinks.map((link) => {
+        const badge = link.badgeKey ? formatBadgeCount(badges[link.badgeKey]) : null
+        return (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            end={link.end}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `sidebar-link flex items-center gap-3 ${isActive ? 'sidebar-link-active' : ''}`
+            }
+          >
+            <NavIcon icon={link.icon} />
+            <span className="min-w-0 flex-1 truncate">{link.label}</span>
+            {badge ? (
+              <span className="ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary-500 px-1.5 text-[10px] font-semibold leading-none text-white">
+                {badge}
+              </span>
+            ) : null}
+          </NavLink>
+        )
+      })}
     </nav>
   )
 }
@@ -90,6 +104,10 @@ function AdminShell({ setHeaderSlot }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [navBadges, setNavBadges] = useState({
+    pendingBusinesses: 0,
+    pendingReviews: 0,
+  })
 
   const refreshUnread = useCallback(async () => {
     try {
@@ -100,15 +118,53 @@ function AdminShell({ setHeaderSlot }) {
     }
   }, [])
 
+  const refreshNavBadges = useCallback(async () => {
+    try {
+      const [stats, notifications] = await Promise.all([
+        adminApi.getDashboard(),
+        adminApi.getNotifications().catch(() => []),
+      ])
+
+      const unreadByType = (Array.isArray(notifications) ? notifications : []).reduce(
+        (acc, item) => {
+          if (item?.read) return acc
+          if (item?.type === 'pending_business') acc.pendingBusinesses += 1
+          if (item?.type === 'pending_review') acc.pendingReviews += 1
+          return acc
+        },
+        { pendingBusinesses: 0, pendingReviews: 0 },
+      )
+
+      // Prefer live queue size; fall back to unread notification counts for that tab
+      setNavBadges({
+        pendingBusinesses: Math.max(
+          Number(stats?.pendingBusinesses) || 0,
+          unreadByType.pendingBusinesses,
+        ),
+        pendingReviews: Math.max(
+          Number(stats?.flaggedReviews) || 0,
+          unreadByType.pendingReviews,
+        ),
+      })
+    } catch {
+      // ignore polling errors
+    }
+  }, [])
+
   useEffect(() => {
     refreshUnread()
-    const timer = setInterval(refreshUnread, 30000)
+    refreshNavBadges()
+    const timer = setInterval(() => {
+      refreshUnread()
+      refreshNavBadges()
+    }, 30000)
     return () => clearInterval(timer)
-  }, [refreshUnread])
+  }, [refreshUnread, refreshNavBadges])
 
   useEffect(() => {
     setMobileNavOpen(false)
-  }, [location.pathname])
+    refreshNavBadges()
+  }, [location.pathname, refreshNavBadges])
 
   useEffect(() => {
     if (!mobileNavOpen) return undefined
@@ -173,7 +229,7 @@ function AdminShell({ setHeaderSlot }) {
 
         <div className="flex min-h-0 flex-1">
           <aside className="hidden w-72 shrink-0 border-r border-border bg-white lg:flex lg:flex-col">
-            <SidebarNav />
+            <SidebarNav badges={navBadges} />
             <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
           </aside>
 
@@ -206,7 +262,7 @@ function AdminShell({ setHeaderSlot }) {
                 <X className="h-5 w-5" strokeWidth={1.5} />
               </button>
             </div>
-            <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
+            <SidebarNav badges={navBadges} onNavigate={() => setMobileNavOpen(false)} />
             <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
           </aside>
         </div>
@@ -217,8 +273,12 @@ function AdminShell({ setHeaderSlot }) {
         onClose={() => {
           setNotificationsOpen(false)
           refreshUnread()
+          refreshNavBadges()
         }}
-        onUnreadChange={setUnreadCount}
+        onUnreadChange={(count) => {
+          setUnreadCount(count)
+          refreshNavBadges()
+        }}
       />
     </div>
   )

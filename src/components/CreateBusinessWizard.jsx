@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { CheckCircle2, ChevronDown, X } from 'lucide-react'
 import PasswordInput from './PasswordInput'
 import { BUSINESS_LOCATIONS } from '../utils/locations'
+import { PHONE_COUNTRY_CODES } from '../utils/phoneCountryCodes'
 
 const STEPS = ['Business details', 'Additional details', 'Personal details', 'Activate account']
 
-const revenueOptions = ['Under $500K', '$500K - $4.99 million', '$5 million - $24.99 million', '$25 million+']
+const revenueOptions = ['Under £500K', '£500K - £4.99 million', '£5 million - £24.99 million', '£25 million+']
 const employeeOptions = ['1-9', '10-49', '50-249', '250-999', '1000+']
-const phoneCodes = ['+1', '+44', '+61', '+91', '+971']
 
 const emptyForm = {
   location: 'United Kingdom',
@@ -21,7 +21,8 @@ const emptyForm = {
   firstName: '',
   lastName: '',
   email: '',
-  phoneCode: '+91',
+  phoneCode: '+44',
+  phoneCountry: 'United Kingdom',
   phone: '',
   password: '',
 }
@@ -399,17 +400,24 @@ Contact: ${form.firstName} ${form.lastName}`.trim(),
                     <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="crmPhone">
                       Phone number
                     </label>
-                    <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)]">
                       <div className="relative">
                         <select
                           id="crmPhoneCode"
                           className="input-field appearance-none pr-10"
-                          value={form.phoneCode}
-                          onChange={update('phoneCode')}
+                          value={`${form.phoneCode}|${form.phoneCountry || ''}`}
+                          onChange={(e) => {
+                            const [code, ...nameParts] = e.target.value.split('|')
+                            setForm((prev) => ({
+                              ...prev,
+                              phoneCode: code,
+                              phoneCountry: nameParts.join('|'),
+                            }))
+                          }}
                         >
-                          {phoneCodes.map((code) => (
-                            <option key={code} value={code}>
-                              {code}
+                          {PHONE_COUNTRY_CODES.map((country) => (
+                            <option key={`${country.name}-${country.code}`} value={`${country.code}|${country.name}`}>
+                              {country.name} ({country.code})
                             </option>
                           ))}
                         </select>

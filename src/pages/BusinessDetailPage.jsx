@@ -8,7 +8,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
 import { formatCurrency, formatDate } from '../utils/format'
-import { REVIEW_STATUS, resolveMediaUrl } from '../utils/constants'
+import { REVIEW_STATUS } from '../utils/constants'
 
 const statusColors = {
   [REVIEW_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
@@ -372,29 +372,12 @@ export default function BusinessDetailPage() {
               <div className="sm:col-span-2">
                 <DetailItem label="Address">{business.address}</DetailItem>
               </div>
-              <div className="sm:col-span-2">
-                <DetailItem label="Logo URL">
-                  {business.logo_url ? (
-                    <a
-                      href={resolveMediaUrl(business.logo_url)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary-600 hover:underline"
-                    >
-                      {business.logo_url}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </DetailItem>
-              </div>
             </dl>
           </section>
 
           <section className="card p-6">
             <h3 className="text-base font-semibold text-slate-900">Owner account</h3>
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-              <DetailItem label="Owner ID">{business.owner_id || business.user_id}</DetailItem>
               <DetailItem label="Owner name">{business.owner_name}</DetailItem>
               <DetailItem label="Owner email">{business.owner_email}</DetailItem>
               <DetailItem label="Email verified">
