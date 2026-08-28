@@ -7,7 +7,13 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
-import { formatCurrency, formatDate } from '../utils/format'
+import {
+  cancellationNotice,
+  formatCurrency,
+  formatDate,
+  isCancellationScheduled,
+  subscriptionStatusLabel,
+} from '../utils/format'
 import { REVIEW_STATUS } from '../utils/constants'
 
 const statusColors = {
@@ -185,8 +191,14 @@ export default function BusinessDetailPage() {
             <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium capitalize text-primary-800">
               {business.plan || 'free'}
             </span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium capitalize text-slate-700">
-              {business.subscription_status || 'active'}
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                isCancellationScheduled(business)
+                  ? 'bg-slate-200 text-slate-800'
+                  : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {subscriptionStatusLabel(business)}
             </span>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
@@ -389,6 +401,12 @@ export default function BusinessDetailPage() {
 
           <section className="card p-6">
             <h3 className="text-base font-semibold text-slate-900">Subscription</h3>
+            {isCancellationScheduled(business) ? (
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <p className="font-medium text-slate-900">Cancellation scheduled</p>
+                <p className="mt-1">{cancellationNotice(business)}</p>
+              </div>
+            ) : null}
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
               <DetailItem label="Plan">
                 <span className="capitalize">{business.plan || 'free'}</span>
@@ -402,10 +420,14 @@ export default function BusinessDetailPage() {
                   '—'
                 )}
               </DetailItem>
-              <DetailItem label="Status">
-                <span className="capitalize">{(business.subscription_status || '—').replace('_', ' ')}</span>
-              </DetailItem>
+              <DetailItem label="Status">{subscriptionStatusLabel(business)}</DetailItem>
               <DetailItem label="Period end">{formatDate(business.current_period_end)}</DetailItem>
+              {isCancellationScheduled(business) ? (
+                <DetailItem label="After period end">Moves to Free plan</DetailItem>
+              ) : null}
+              {isCancellationScheduled(business) ? (
+                <DetailItem label="Refund policy">No refund for the current billing period</DetailItem>
+              ) : null}
               <DetailItem label="Subscription updated">
                 {formatDate(business.subscription_updated_at || business.subscription_created_at)}
               </DetailItem>

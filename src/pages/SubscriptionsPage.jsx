@@ -4,12 +4,13 @@ import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
-import { formatDate } from '../utils/format'
+import { formatDate, isCancellationScheduled, subscriptionStatusLabel, cancellationNotice } from '../utils/format'
 
 function statusClass(status) {
   const value = String(status || '').toLowerCase()
   if (value === 'active' || value === 'trialing') return 'bg-emerald-100 text-emerald-800'
   if (value === 'past_due') return 'bg-amber-100 text-amber-800'
+  if (value === 'cancellation_scheduled') return 'bg-slate-200 text-slate-800'
   if (value === 'cancelled' || value === 'canceled') return 'bg-slate-100 text-slate-600'
   return 'bg-slate-100 text-slate-700'
 }
@@ -38,7 +39,7 @@ export default function SubscriptionsPage() {
     <div>
       <PageHeader
         title="Subscriptions"
-        description="Live business plans after Square checkout and renewals. Pending means payment started but not confirmed yet."
+        description="Live business plans after Square checkout and renewals. Cancelled status with a paid plan means cancellation is scheduled until period end (no refund, no further charges)."
       >
         <button
           type="button"
@@ -58,6 +59,7 @@ export default function SubscriptionsPage() {
               <th className="px-4 py-3 font-medium text-gray-700">Pending plan</th>
               <th className="px-4 py-3 font-medium text-gray-700">Status</th>
               <th className="px-4 py-3 font-medium text-gray-700">Period end</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Billing note</th>
               <th className="px-4 py-3 font-medium text-gray-700">Square sub</th>
               <th className="px-4 py-3 font-medium text-gray-700">Updated</th>
             </tr>
@@ -65,7 +67,7 @@ export default function SubscriptionsPage() {
           <tbody>
             {subscriptions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   No subscriptions found
                 </td>
               </tr>
@@ -96,12 +98,19 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusClass(sub.status)}`}
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(
+                        isCancellationScheduled(sub) ? 'cancellation_scheduled' : sub.status,
+                      )}`}
                     >
-                      {(sub.status || '—').replace('_', ' ')}
+                      {subscriptionStatusLabel(sub)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{formatDate(sub.current_period_end)}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {cancellationNotice(sub) || (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs text-slate-500">
                     {sub.square_subscription_id || '—'}
                   </td>

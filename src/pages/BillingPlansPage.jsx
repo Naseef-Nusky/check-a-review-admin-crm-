@@ -66,7 +66,6 @@ export default function BillingPlansPage() {
         name: plan.name,
         amountDollars: Number(priceDraft[plan.key]),
         currency: plan.currency,
-        cadence: plan.cadence,
         active: plan.active,
         invitationsPerMonth: plan.invitationsPerMonth,
         widgets: plan.widgets,
@@ -113,7 +112,7 @@ export default function BillingPlansPage() {
     try {
       const updated = await adminApi.syncAllBillingPlans()
       applyPlans(updated || [])
-      setMessage('Starter, Plus, and Premium synced to Square.')
+      setMessage('Starter, Plus, and Premium synced to Square with monthly billing.')
     } catch (err) {
       setError(err.message || 'Failed to sync plans')
     } finally {
@@ -204,24 +203,16 @@ export default function BillingPlansPage() {
                     />
                   </div>
                   <p className="mt-1 text-xs text-slate-400">
-                    Monthly price in {plan.currency || 'GBP'} billed each month
-                    {plan.perDomain ? ', multiplied by domains at checkout' : ''}.
+                    Monthly price in {plan.currency || 'GBP'} billed each month.
                     {plan.monthlyAmountCents
-                      ? ` Charge: ${currencySymbol(plan.currency)}${((Number(plan.amountCents) || 0) / 100).toFixed(0)} / month.`
+                      ? ` Charge: ${currencySymbol(plan.currency)}${((Number(plan.monthlyAmountCents) || 0) / 100).toFixed(0)} / month.`
                       : ''}
                   </p>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Cadence</label>
-                  <select
-                    className="input-field"
-                    value={plan.cadence}
-                    onChange={(e) => updateLocal(plan.key, 'cadence', e.target.value)}
-                  >
-                    <option value="MONTHLY">Monthly</option>
-                    <option value="YEARLY">Yearly</option>
-                    <option value="WEEKLY">Weekly</option>
-                  </select>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Billing</label>
+                  <p className="input-field flex items-center bg-slate-50 text-slate-700">Monthly</p>
+                  <p className="mt-1 text-xs text-slate-400">All plans renew monthly on Square.</p>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
