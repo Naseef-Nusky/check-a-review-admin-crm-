@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import CreateBusinessWizard from '../components/CreateBusinessWizard'
+import Button from '../components/Button'
 import { formatDate } from '../utils/format'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
@@ -20,12 +21,28 @@ const listingStatusClass = {
   rejected: 'bg-red-100 text-red-800',
 }
 
+function ListingToggleButton({ biz, busy, onToggle }) {
+  const isPublished = (biz.status || 'published') === 'published'
+
+  return (
+    <Button
+      size="sm"
+      variant={isPublished ? 'secondary' : 'primary'}
+      disabled={busy}
+      onClick={onToggle}
+    >
+      {busy ? 'Saving...' : isPublished ? 'Unpublish' : 'Publish'}
+    </Button>
+  )
+}
+
 export default function BusinessesPage() {
   const [businesses, setBusinesses] = useState([])
   const [categoryTree, setCategoryTree] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deletingId, setDeletingId] = useState('')
+  const [moderatingId, setModeratingId] = useState('')
   const [actionError, setActionError] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [filters, setFilters] = useState({
@@ -108,6 +125,21 @@ export default function BusinessesPage() {
       status: 'all',
       listingStatus: 'all',
     })
+  }
+
+  const handleModerate = async (biz, status) => {
+    setModeratingId(biz.id)
+    setActionError('')
+    try {
+      const updated = await adminApi.moderateBusiness(biz.id, status)
+      setBusinesses((prev) =>
+        prev.map((item) => (item.id === biz.id ? { ...item, ...updated, status: updated.status } : item)),
+      )
+    } catch (err) {
+      setActionError(err.message || 'Failed to update listing status')
+    } finally {
+      setModeratingId('')
+    }
   }
 
   const handleDelete = async (biz) => {
@@ -245,7 +277,7 @@ export default function BusinessesPage() {
       />
 
       <div className="card table-scroll">
-        <table className="data-table min-w-[1100px]">
+        <table className="data-table min-w-[1180px]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Business</th>
@@ -330,7 +362,7 @@ export default function BusinessesPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(biz.created_at)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Link
                         to={`/businesses/${biz.id}`}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-slate-600 hover:bg-slate-50"
@@ -338,6 +370,13 @@ export default function BusinessesPage() {
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
+                      <ListingToggleButton
+                        biz={biz}
+                        busy={moderatingId === biz.id}
+                        onToggle={() =>
+                          handleModerate(biz, (biz.status || 'published') === 'published' ? 'pending' : 'published')
+                        }
+                      />
                       <button
                         type="button"
                         onClick={() => handleDelete(biz)}
