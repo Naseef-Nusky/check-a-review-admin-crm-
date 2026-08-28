@@ -7,10 +7,11 @@ export function formatDate(value) {
   })
 }
 
-export function formatCurrency(cents, currency = 'USD') {
-  const code = String(currency || 'USD').toUpperCase()
+export function formatCurrency(cents, currency = 'GBP') {
+  const code = String(currency || 'GBP').toUpperCase()
+  const locale = code === 'GBP' ? 'en-GB' : code === 'EUR' ? 'de-DE' : 'en-US'
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: code,
     }).format((Number(cents) || 0) / 100)

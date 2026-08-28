@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Building2, DollarSign, MessageSquare, Users } from 'lucide-react'
+import { AlertTriangle, Building2, MessageSquare, PoundSterling, Users } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
@@ -39,7 +39,11 @@ export default function DashboardPage() {
         <StatCard label="Total users" value={(stats.totalUsers ?? stats.totalCustomers).toLocaleString()} icon={Users} />
         <StatCard label="Total businesses" value={stats.totalBusinesses.toLocaleString()} icon={Building2} />
         <StatCard label="Total reviews" value={stats.totalReviews.toLocaleString()} icon={MessageSquare} />
-        <StatCard label="Total revenue" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} />
+        <StatCard
+          label="Total revenue"
+          value={formatCurrency(stats.totalRevenue, stats.revenueCurrency)}
+          icon={PoundSterling}
+        />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <div className="card p-4 sm:p-6">
