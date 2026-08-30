@@ -13,6 +13,7 @@ export default function SettingsPage() {
     supportEmail: '',
     aiModeration: true,
     autoPublishThreshold: '85',
+    domainDnsCheck: true,
     emailProvider: 'sendgrid',
     logoUrl: '',
   })
@@ -30,6 +31,7 @@ export default function SettingsPage() {
       supportEmail: data.support_email || '',
       aiModeration: data.ai_moderation_enabled ?? true,
       autoPublishThreshold: String(data.auto_publish_threshold ?? 85),
+      domainDnsCheck: data.domain_dns_check_enabled ?? true,
       emailProvider: data.email_provider || 'sendgrid',
       logoUrl: data.logo_url || '',
     })
@@ -59,6 +61,7 @@ export default function SettingsPage() {
         supportEmail: settings.supportEmail,
         aiModeration: settings.aiModeration,
         autoPublishThreshold: parseInt(settings.autoPublishThreshold, 10),
+        domainDnsCheck: settings.domainDnsCheck,
         emailProvider: settings.emailProvider,
       })
       applySettings(updated)
@@ -136,6 +139,23 @@ export default function SettingsPage() {
         <div>
           <label htmlFor="supportEmail" className="label-text text-slate-700">Support Email</label>
           <input id="supportEmail" type="email" value={settings.supportEmail} onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })} className="input-field" />
+        </div>
+        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <input
+            id="domainDnsCheck"
+            type="checkbox"
+            checked={settings.domainDnsCheck}
+            onChange={(e) => setSettings({ ...settings, domainDnsCheck: e.target.checked })}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <div>
+            <label htmlFor="domainDnsCheck" className="text-sm font-medium text-slate-700">
+              Require live domain (DNS check)
+            </label>
+            <p className="mt-1 text-xs text-slate-500">
+              When on, new websites must resolve in DNS. Turn this off while testing with unused or fake domains, then turn it back on for production.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <input id="aiModeration" type="checkbox" checked={settings.aiModeration} onChange={(e) => setSettings({ ...settings, aiModeration: e.target.checked })} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
