@@ -7,6 +7,7 @@ import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { formatDate } from '../utils/format'
+import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 import BusinessLogo from '../components/BusinessLogo'
 
 export default function PendingBusinessesPage() {
@@ -32,6 +33,7 @@ export default function PendingBusinessesPage() {
     try {
       await adminApi.moderateBusiness(id, status)
       setBusinesses((prev) => prev.filter((b) => b.id !== id))
+      requestCrmBadgesRefresh()
     } catch (err) {
       alert(err.message)
     } finally {

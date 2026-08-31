@@ -24,6 +24,7 @@ import { PageHeaderProvider } from '../components/PageHeader'
 import NotificationPanel, { NotificationBell } from '../components/NotificationPanel'
 import { adminApi } from '../services/api'
 import { crmRoleLabel } from '../utils/constants'
+import { CRM_BADGES_REFRESH } from '../utils/crmEvents'
 
 const sidebarLinks = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -120,36 +121,30 @@ function AdminShell({ setHeaderSlot }) {
 
   const refreshNavBadges = useCallback(async () => {
     try {
-      const [stats, notifications] = await Promise.all([
-        adminApi.getDashboard(),
-        adminApi.getNotifications().catch(() => []),
-      ])
-
-      const unreadByType = (Array.isArray(notifications) ? notifications : []).reduce(
-        (acc, item) => {
-          if (item?.read) return acc
-          if (item?.type === 'pending_business') acc.pendingBusinesses += 1
-          if (item?.type === 'pending_review') acc.pendingReviews += 1
-          return acc
-        },
-        { pendingBusinesses: 0, pendingReviews: 0 },
-      )
-
-      // Prefer live queue size; fall back to unread notification counts for that tab
+      const stats = await adminApi.getDashboard()
       setNavBadges({
-        pendingBusinesses: Math.max(
-          Number(stats?.pendingBusinesses) || 0,
-          unreadByType.pendingBusinesses,
-        ),
-        pendingReviews: Math.max(
-          Number(stats?.flaggedReviews) || 0,
-          unreadByType.pendingReviews,
-        ),
+        pendingBusinesses: Number(stats?.pendingBusinesses) || 0,
+        pendingReviews: Number(stats?.flaggedReviews) || 0,
       })
     } catch {
       // ignore polling errors
     }
   }, [])
+
+  const syncNotificationsForRoute = useCallback(async () => {
+    const path = location.pathname
+    try {
+      if (path === '/pending-businesses') {
+        await adminApi.markNotificationsReadByType('pending_business')
+        await refreshUnread()
+      } else if (path === '/flagged') {
+        await adminApi.markNotificationsReadByType('pending_review')
+        await refreshUnread()
+      }
+    } catch {
+      // ignore sync errors
+    }
+  }, [location.pathname, refreshUnread])
 
   useEffect(() => {
     refreshUnread()
@@ -158,13 +153,35 @@ function AdminShell({ setHeaderSlot }) {
       refreshUnread()
       refreshNavBadges()
     }, 30000)
-    return () => clearInterval(timer)
+    const onRefresh = () => {
+      refreshUnread()
+      refreshNavBadges()
+    }
+    const onFocus = () => {
+      refreshUnread()
+      refreshNavBadges()
+    }
+    window.addEventListener(CRM_BADGES_REFRESH, onRefresh)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener(CRM_BADGES_REFRESH, onRefresh)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [refreshUnread, refreshNavBadges])
 
   useEffect(() => {
     setMobileNavOpen(false)
-    refreshNavBadges()
-  }, [location.pathname, refreshNavBadges])
+    let cancelled = false
+    const sync = async () => {
+      await syncNotificationsForRoute()
+      if (!cancelled) refreshNavBadges()
+    }
+    sync()
+    return () => {
+      cancelled = true
+    }
+  }, [location.pathname, refreshNavBadges, syncNotificationsForRoute])
 
   useEffect(() => {
     if (!mobileNavOpen) return undefined

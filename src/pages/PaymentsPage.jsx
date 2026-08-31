@@ -4,6 +4,7 @@ import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import SquareBillingBanner, { PaymentModeBadge } from '../components/SquareBillingBanner'
 import { formatCurrency, formatDate } from '../utils/format'
 
 function statusClass(status) {
@@ -13,8 +14,16 @@ function statusClass(status) {
   return 'bg-slate-100 text-slate-700'
 }
 
+const defaultBillingMeta = {
+  squareConfigured: false,
+  squareEnvironment: 'sandbox',
+  paymentsAreTest: true,
+  currency: 'GBP',
+}
+
 export default function PaymentsPage() {
   const [payments, setPayments] = useState([])
+  const [billingMeta, setBillingMeta] = useState(defaultBillingMeta)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -23,7 +32,16 @@ export default function PaymentsPage() {
     setError('')
     adminApi
       .getPayments()
-      .then(setPayments)
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : data?.payments || []
+        setPayments(rows)
+        setBillingMeta({
+          squareConfigured: data?.squareConfigured ?? defaultBillingMeta.squareConfigured,
+          squareEnvironment: data?.squareEnvironment ?? defaultBillingMeta.squareEnvironment,
+          paymentsAreTest: data?.paymentsAreTest ?? defaultBillingMeta.paymentsAreTest,
+          currency: data?.currency ?? defaultBillingMeta.currency,
+        })
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -37,7 +55,7 @@ export default function PaymentsPage() {
     <div>
       <PageHeader
         title="Payments"
-        description="Square charges recorded after checkout confirmation or webhook. Amounts are from plan catalog or Square."
+        description="Square subscription charges from business checkout, renewals, and webhooks."
       >
         <button
           type="button"
@@ -48,14 +66,17 @@ export default function PaymentsPage() {
         </button>
       </PageHeader>
 
+      <SquareBillingBanner {...billingMeta} />
+
       <div className="card table-scroll">
-        <table className="data-table min-w-[56rem]">
+        <table className="data-table min-w-[60rem]">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Date</th>
               <th className="px-4 py-3 font-medium text-gray-700">Business</th>
               <th className="px-4 py-3 font-medium text-gray-700">Plan</th>
               <th className="px-4 py-3 font-medium text-gray-700">Amount</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Mode</th>
               <th className="px-4 py-3 font-medium text-gray-700">Status</th>
               <th className="px-4 py-3 font-medium text-gray-700">Payment ID</th>
             </tr>
@@ -63,8 +84,8 @@ export default function PaymentsPage() {
           <tbody>
             {payments.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No payments found yet. They appear after a successful business checkout.
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  No payments found yet. Complete a test checkout from the business portal subscription page.
                 </td>
               </tr>
             ) : (
@@ -86,6 +107,9 @@ export default function PaymentsPage() {
                   <td className="px-4 py-3 capitalize text-slate-700">{payment.plan || '—'}</td>
                   <td className="px-4 py-3 font-medium">
                     {formatCurrency(payment.amount, payment.currency)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <PaymentModeBadge isTest={payment.is_test !== false} />
                   </td>
                   <td className="px-4 py-3">
                     <span

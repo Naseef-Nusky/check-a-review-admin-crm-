@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { REVIEW_STATUS } from '../utils/constants'
 import { formatDate } from '../utils/format'
+import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 import StarRating from '../components/StarRating'
 
 const statusColors = {
@@ -83,6 +84,7 @@ export default function ReviewsPage() {
     try {
       await adminApi.moderateReview(id, status)
       setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+      requestCrmBadgesRefresh()
     } catch (err) {
       alert(err.message)
     } finally {

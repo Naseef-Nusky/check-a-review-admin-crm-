@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { REVIEW_STATUS } from '../utils/constants'
 import { formatDate } from '../utils/format'
+import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 
 export default function FlaggedReviewsPage() {
   const [reviews, setReviews] = useState([])
@@ -32,6 +33,7 @@ export default function FlaggedReviewsPage() {
     try {
       await adminApi.moderateReview(id, status)
       setReviews((prev) => prev.filter((r) => r.id !== id))
+      requestCrmBadgesRefresh()
     } catch (err) {
       alert(err.message)
     } finally {

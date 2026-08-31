@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import SquareBillingBanner from '../components/SquareBillingBanner'
 
 function centsToDollars(cents) {
   return (Number(cents || 0) / 100).toFixed(2)
@@ -21,6 +22,11 @@ export default function BillingPlansPage() {
   const [plans, setPlans] = useState([])
   const [priceDraft, setPriceDraft] = useState({})
   const [squareConfigured, setSquareConfigured] = useState(false)
+  const [billingMeta, setBillingMeta] = useState({
+    squareEnvironment: 'sandbox',
+    paymentsAreTest: true,
+    currency: 'GBP',
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -42,6 +48,11 @@ export default function BillingPlansPage() {
       const data = await adminApi.getBillingPlans()
       applyPlans(data.plans || [])
       setSquareConfigured(Boolean(data.squareConfigured))
+      setBillingMeta({
+        squareEnvironment: data.squareEnvironment || 'sandbox',
+        paymentsAreTest: data.paymentsAreTest !== false,
+        currency: data.currency || 'GBP',
+      })
     } catch (err) {
       setError(err.message || 'Failed to load billing plans')
     } finally {
@@ -142,11 +153,8 @@ export default function BillingPlansPage() {
         </div>
       </PageHeader>
 
-      {!squareConfigured ? (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Add `SQUARE_ACCESS_TOKEN` and `SQUARE_LOCATION_ID` to the backend `.env` before syncing plans.
-        </div>
-      ) : null}
+      <SquareBillingBanner squareConfigured={squareConfigured} {...billingMeta} />
+
       {message ? (
         <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {message}

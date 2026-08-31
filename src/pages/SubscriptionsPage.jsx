@@ -4,6 +4,7 @@ import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import SquareBillingBanner from '../components/SquareBillingBanner'
 import { formatDate, isCancellationScheduled, subscriptionStatusLabel, cancellationNotice } from '../utils/format'
 
 function statusClass(status) {
@@ -17,15 +18,18 @@ function statusClass(status) {
 
 export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState([])
+  const [billingMeta, setBillingMeta] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const load = () => {
     setLoading(true)
     setError('')
-    adminApi
-      .getSubscriptions()
-      .then(setSubscriptions)
+    Promise.all([adminApi.getSubscriptions(), adminApi.getBillingStatus().catch(() => null)])
+      .then(([rows, billing]) => {
+        setSubscriptions(rows || [])
+        setBillingMeta(billing)
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -49,6 +53,8 @@ export default function SubscriptionsPage() {
           Refresh
         </button>
       </PageHeader>
+
+      {billingMeta ? <SquareBillingBanner {...billingMeta} /> : null}
 
       <div className="card table-scroll">
         <table className="data-table min-w-[56rem]">

@@ -8,6 +8,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import CreateBusinessWizard from '../components/CreateBusinessWizard'
 import Button from '../components/Button'
 import { formatDate } from '../utils/format'
+import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
 
@@ -135,6 +136,7 @@ export default function BusinessesPage() {
       setBusinesses((prev) =>
         prev.map((item) => (item.id === biz.id ? { ...item, ...updated, status: updated.status } : item)),
       )
+      requestCrmBadgesRefresh()
     } catch (err) {
       setActionError(err.message || 'Failed to update listing status')
     } finally {

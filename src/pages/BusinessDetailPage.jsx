@@ -14,7 +14,9 @@ import {
   isCancellationScheduled,
   subscriptionStatusLabel,
 } from '../utils/format'
+import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 import { REVIEW_STATUS } from '../utils/constants'
+import { PaymentModeBadge } from '../components/SquareBillingBanner'
 
 const statusColors = {
   [REVIEW_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
@@ -125,6 +127,7 @@ export default function BusinessDetailPage() {
       const updated = await adminApi.moderateBusiness(id, status)
       setBusiness((prev) => ({ ...prev, ...updated }))
       setSuccess(status === 'published' ? 'Business approved and published' : 'Business listing rejected')
+      requestCrmBadgesRefresh()
     } catch (err) {
       setModerateError(err.message || 'Failed to update listing status')
     } finally {
@@ -457,13 +460,14 @@ export default function BusinessDetailPage() {
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Date</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Plan</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Amount</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Mode</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payments.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-6 text-center text-sm text-gray-500">
+                      <td colSpan={5} className="px-3 py-6 text-center text-sm text-gray-500">
                         No payments recorded for this business yet.
                       </td>
                     </tr>
@@ -474,6 +478,9 @@ export default function BusinessDetailPage() {
                         <td className="px-3 py-2 text-sm capitalize">{payment.plan || '—'}</td>
                         <td className="px-3 py-2 text-sm font-medium">
                           {formatCurrency(payment.amount, payment.currency)}
+                        </td>
+                        <td className="px-3 py-2 text-sm">
+                          <PaymentModeBadge isTest={payment.is_test !== false} />
                         </td>
                         <td className="px-3 py-2 text-sm capitalize">{payment.status || '—'}</td>
                       </tr>

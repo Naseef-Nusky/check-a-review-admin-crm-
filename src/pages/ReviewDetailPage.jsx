@@ -9,6 +9,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import { REVIEW_STATUS } from '../utils/constants'
 import { formatDate } from '../utils/format'
+import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 
 const statusColors = {
   [REVIEW_STATUS.PENDING]: 'bg-yellow-100 text-yellow-800',
@@ -41,6 +42,7 @@ export default function ReviewDetailPage() {
     try {
       const updated = await adminApi.moderateReview(id, status)
       setReview((prev) => ({ ...prev, ...updated, status }))
+      requestCrmBadgesRefresh()
     } catch (err) {
       alert(err.message)
     } finally {

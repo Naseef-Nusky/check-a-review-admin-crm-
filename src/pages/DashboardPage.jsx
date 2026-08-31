@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Building2, MessageSquare, PoundSterling, Users } from 'lucide-react'
+import { AlertTriangle, Building2, CreditCard, MessageSquare, PoundSterling, Users } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import SquareBillingBanner from '../components/SquareBillingBanner'
 import { formatCurrency } from '../utils/format'
 
 export default function DashboardPage() {
@@ -35,14 +36,35 @@ export default function DashboardPage() {
         title="Admin Dashboard"
         description="Platform performance, moderation queue, and revenue signals."
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+      <SquareBillingBanner
+        squareConfigured={stats.squareConfigured}
+        squareEnvironment={stats.squareEnvironment}
+        paymentsAreTest={stats.paymentsAreTest}
+        currency={stats.revenueCurrency || stats.currency}
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard label="Total users" value={(stats.totalUsers ?? stats.totalCustomers).toLocaleString()} icon={Users} />
         <StatCard label="Total businesses" value={stats.totalBusinesses.toLocaleString()} icon={Building2} />
         <StatCard label="Total reviews" value={stats.totalReviews.toLocaleString()} icon={MessageSquare} />
         <StatCard
-          label="Total revenue"
-          value={formatCurrency(stats.totalRevenue, stats.revenueCurrency)}
+          label="Test revenue"
+          value={formatCurrency(stats.testRevenue ?? 0, stats.revenueCurrency)}
+          icon={CreditCard}
+          hint={stats.paymentsAreTest ? 'Sandbox payments only — not real money' : 'Historical sandbox charges'}
+        />
+        <StatCard
+          label="Live revenue"
+          value={formatCurrency(stats.liveRevenue ?? 0, stats.revenueCurrency)}
           icon={PoundSterling}
+          hint={stats.paymentsAreTest ? 'No live charges while Square is in sandbox' : 'Real Square production charges'}
+        />
+        <StatCard
+          label="Total collected"
+          value={formatCurrency(stats.totalRevenue ?? 0, stats.revenueCurrency)}
+          icon={PoundSterling}
+          hint="Succeeded payments (test + live)"
         />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">

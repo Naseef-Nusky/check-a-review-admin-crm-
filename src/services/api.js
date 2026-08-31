@@ -69,6 +69,7 @@ export const adminApi = {
   moderateBusiness: (id, status) => api.patch(`/admin/businesses/${id}/moderate`, { status }),
   getSubscriptions: () => api.get('/admin/subscriptions'),
   getPayments: () => api.get('/admin/payments'),
+  getBillingStatus: () => api.get('/admin/billing-status'),
   getBusinessPayments: (id) => api.get(`/admin/businesses/${id}/payments`),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
@@ -88,6 +89,7 @@ export const adminApi = {
   getUnreadNotificationCount: () => api.get('/notifications/unread-count'),
   markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
   markAllNotificationsRead: () => api.patch('/notifications/read-all'),
+  markNotificationsReadByType: (type) => api.patch(`/notifications/read-by-type/${type}`),
   login: (email, password) => api.post('/auth/login', { email, password }),
   getMe: () => api.get('/auth/me'),
 }
