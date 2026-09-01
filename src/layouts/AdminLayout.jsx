@@ -85,7 +85,7 @@ function SidebarNav({ onNavigate, badges = {} }) {
 
 function SidebarAccount({ user, isViewer, onLogout }) {
   return (
-    <div className="border-t border-border p-4">
+    <div className="shrink-0 border-t border-border p-4">
       <p className="truncate text-sm font-medium text-ink">{user?.name}</p>
       <p className="truncate text-xs text-ink-muted">{user?.email}</p>
       <p className="mt-1 text-xs font-medium text-primary-600">{crmRoleLabel(user?.role)}</p>
@@ -202,9 +202,9 @@ function AdminShell({ setHeaderSlot }) {
   }
 
   return (
-    <div className="admin-shell min-h-screen bg-surface-muted">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col">
-        <header className="sticky top-0 z-40 border-b border-slate-800" style={headerBg}>
+    <div className="admin-shell min-h-screen bg-surface-muted lg:h-screen lg:overflow-hidden">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col lg:h-full lg:min-h-0">
+        <header className="sticky top-0 z-40 shrink-0 border-b border-slate-800" style={headerBg}>
           <div className="flex items-start gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-0">
             <div className="hidden w-72 shrink-0 items-center gap-3 border-r border-white/10 px-6 py-1 lg:flex">
               <Link to="/" className="inline-flex shrink-0">
@@ -244,13 +244,13 @@ function AdminShell({ setHeaderSlot }) {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1">
-          <aside className="hidden w-72 shrink-0 border-r border-border bg-white lg:flex lg:flex-col">
+        <div className="flex min-h-0 flex-1 lg:overflow-hidden">
+          <aside className="hidden w-72 shrink-0 border-r border-border bg-white lg:flex lg:max-h-full lg:flex-col lg:overflow-hidden">
             <SidebarNav badges={navBadges} />
             <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
           </aside>
 
-          <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:overflow-y-auto lg:p-8">
             <Outlet />
           </main>
         </div>

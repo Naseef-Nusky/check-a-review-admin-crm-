@@ -279,7 +279,19 @@ export default function BusinessesPage() {
       />
 
       <div className="card table-scroll">
-        <table className="data-table min-w-[1180px]">
+        <table className="data-table w-full min-w-[1180px] table-fixed">
+          <colgroup>
+            <col className="w-[220px]" />
+            <col className="w-[96px]" />
+            <col className="w-[132px]" />
+            <col className="w-[168px]" />
+            <col className="w-[96px]" />
+            <col className="w-[72px]" />
+            <col className="w-[88px]" />
+            <col className="w-[168px]" />
+            <col className="w-[104px]" />
+            <col className="w-[176px]" />
+          </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Business</th>
@@ -306,12 +318,16 @@ export default function BusinessesPage() {
             ) : (
               filteredBusinesses.map((biz) => (
                 <tr key={biz.id} className="border-b border-gray-100 hover:bg-slate-50/80">
-                  <td className="px-4 py-3">
-                    <Link to={`/businesses/${biz.id}`} className="flex items-center gap-3">
+                  <td className="max-w-[220px] px-4 py-3">
+                    <Link to={`/businesses/${biz.id}`} className="flex min-w-0 items-center gap-3">
                       <BusinessLogo logoUrl={biz.logo_url} name={biz.name} />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900 hover:text-primary-600">{biz.name}</p>
-                        <p className="truncate text-xs text-slate-400">/{biz.slug}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-slate-900 hover:text-primary-600" title={biz.name}>
+                          {biz.name}
+                        </p>
+                        <p className="truncate text-xs text-slate-400" title={biz.slug}>
+                          /{biz.slug}
+                        </p>
                       </div>
                     </Link>
                   </td>
@@ -324,11 +340,15 @@ export default function BusinessesPage() {
                       {biz.status || 'published'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{biz.category || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    <span className="block truncate" title={biz.category || undefined}>
+                      {biz.category || '—'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     <div className="space-y-0.5">
-                      <p>{biz.email || '—'}</p>
-                      <p>{biz.phone || '—'}</p>
+                      <p className="truncate" title={biz.email || undefined}>{biz.email || '—'}</p>
+                      <p className="truncate" title={biz.phone || undefined}>{biz.phone || '—'}</p>
                       {biz.website ? (
                         <a
                           href={biz.website.startsWith('http') ? biz.website : `https://${biz.website}`}
@@ -359,8 +379,10 @@ export default function BusinessesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
-                    <p className="font-medium text-slate-700">{biz.owner_name || '—'}</p>
-                    <p>{biz.owner_email || '—'}</p>
+                    <p className="truncate font-medium text-slate-700" title={biz.owner_name || undefined}>
+                      {biz.owner_name || '—'}
+                    </p>
+                    <p className="truncate" title={biz.owner_email || undefined}>{biz.owner_email || '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(biz.created_at)}</td>
                   <td className="px-4 py-3">
