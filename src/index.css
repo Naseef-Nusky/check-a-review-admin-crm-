@@ -160,6 +160,29 @@
     @apply flex flex-wrap gap-2;
   }
 
+  .table-actions-col {
+    @apply sticky right-0 z-[2] min-w-[7.5rem] bg-white sm:min-w-[10.5rem];
+    box-shadow: -8px 0 16px -12px rgb(15 23 42 / 0.18);
+  }
+
+  .data-table thead .table-actions-col {
+    @apply z-[3] bg-slate-50/95 backdrop-blur-sm;
+  }
+
+  .data-table tbody tr:hover .table-actions-col {
+    @apply bg-slate-50/95;
+  }
+
+  .table-actions {
+    @apply flex max-w-[9.5rem] flex-wrap items-center justify-end gap-1 sm:max-w-none sm:gap-1.5;
+  }
+
+  @media (min-width: 640px) {
+    .table-actions-col {
+      box-shadow: -6px 0 12px -8px rgb(15 23 42 / 0.1);
+    }
+  }
+
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
   }

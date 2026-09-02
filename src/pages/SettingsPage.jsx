@@ -1,11 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import LogoUploader from '../components/LogoUploader'
+import BusinessSearchSelect from '../components/BusinessSearchSelect'
 import { resolveMediaUrl } from '../utils/constants'
+
+const FEATURED_SLOTS = 4
+
+function padFeaturedIds(ids = []) {
+  const slots = ids.slice(0, FEATURED_SLOTS).map(String)
+  while (slots.length < FEATURED_SLOTS) slots.push('')
+  return slots
+}
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -17,6 +27,9 @@ export default function SettingsPage() {
     emailProvider: 'sendgrid',
     logoUrl: '',
   })
+  const [featuredIds, setFeaturedIds] = useState(padFeaturedIds())
+  const [featuredSearch, setFeaturedSearch] = useState('')
+  const [publishedBusinesses, setPublishedBusinesses] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -35,19 +48,44 @@ export default function SettingsPage() {
       emailProvider: data.email_provider || 'sendgrid',
       logoUrl: data.logo_url || '',
     })
+    setFeaturedIds(padFeaturedIds(data.featured_business_ids))
   }
 
   const load = () => {
     setLoading(true)
     setError('')
-    adminApi
-      .getSettings()
-      .then(applySettings)
+    Promise.all([adminApi.getSettings(), adminApi.getBusinesses()])
+      .then(([settingsData, businesses]) => {
+        applySettings(settingsData)
+        setPublishedBusinesses(
+          (businesses || [])
+            .filter((b) => b.status === 'published')
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        )
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }
 
   useEffect(load, [])
+
+  const featuredSearchCount = useMemo(() => {
+    const query = featuredSearch.trim().toLowerCase()
+    if (!query) return publishedBusinesses.length
+    return publishedBusinesses.filter((business) => {
+      const haystack = [
+        business.name,
+        business.slug,
+        business.category,
+        business.website,
+        business.email,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return haystack.includes(query)
+    }).length
+  }, [featuredSearch, publishedBusinesses])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -63,6 +101,7 @@ export default function SettingsPage() {
         autoPublishThreshold: parseInt(settings.autoPublishThreshold, 10),
         domainDnsCheck: settings.domainDnsCheck,
         emailProvider: settings.emailProvider,
+        featuredBusinessIds: featuredIds.filter(Boolean),
       })
       applySettings(updated)
       setMessage('Settings saved successfully')
@@ -176,6 +215,59 @@ export default function SettingsPage() {
           <label htmlFor="emailProvider" className="label-text text-slate-700">Email Provider</label>
           <input id="emailProvider" className="input-field bg-slate-50 text-slate-600" value="SendGrid" readOnly />
         </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-800">Homepage featured businesses</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Choose up to 4 published businesses to show in the &quot;Top-rated businesses&quot; section on the public homepage.
+            Leave slots empty to show fewer. If none are selected, the site falls back to the highest-rated listings.
+          </p>
+
+          <div className="relative mt-4">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={featuredSearch}
+              onChange={(e) => setFeaturedSearch(e.target.value)}
+              placeholder="Search businesses by name, category, website…"
+              className="input-field pl-9"
+              aria-label="Search featured businesses"
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500">
+            {featuredSearch.trim()
+              ? `${featuredSearchCount} matching ${featuredSearchCount === 1 ? 'business' : 'businesses'}`
+              : `${publishedBusinesses.length} published businesses available`}
+          </p>
+
+          <div className="mt-4 space-y-3">
+            {featuredIds.map((selectedId, index) => {
+              const takenElsewhere = featuredIds
+                .map((id, slotIndex) => (slotIndex !== index && id ? String(id) : null))
+                .filter(Boolean)
+              return (
+                <div key={index}>
+                  <label htmlFor={`featured-${index}`} className="label-text text-slate-700">
+                    Slot {index + 1}
+                  </label>
+                  <BusinessSearchSelect
+                    id={`featured-${index}`}
+                    businesses={publishedBusinesses}
+                    value={selectedId}
+                    filterQuery={featuredSearch}
+                    excludeIds={takenElsewhere}
+                    onChange={(nextId) => {
+                      const next = [...featuredIds]
+                      next[index] = nextId
+                      setFeaturedIds(next)
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         <Button type="submit" disabled={saving}>
           {saving ? 'Saving...' : 'Save Settings'}
         </Button>

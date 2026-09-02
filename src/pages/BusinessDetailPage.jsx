@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
+import EditBusinessModal from '../components/EditBusinessModal'
 import {
   cancellationNotice,
   formatCurrency,
@@ -51,11 +52,17 @@ export default function BusinessDetailPage() {
   const [success, setSuccess] = useState('')
   const [moderating, setModerating] = useState(false)
   const [moderateError, setModerateError] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
+  const [categoryTree, setCategoryTree] = useState([])
 
   const setTab = (tab) => {
     if (tab === 'reviews') setSearchParams({ tab: 'reviews' })
     else setSearchParams({})
   }
+
+  useEffect(() => {
+    adminApi.getBusinessCategories().then(setCategoryTree).catch(() => setCategoryTree([]))
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -154,6 +161,14 @@ export default function BusinessDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to list
           </Link>
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </button>
           <button
             type="button"
             title="Remove"
@@ -492,6 +507,18 @@ export default function BusinessDetailPage() {
           </section>
         </div>
       )}
+
+      <EditBusinessModal
+        open={editOpen}
+        business={business}
+        categoryTree={categoryTree}
+        onClose={() => setEditOpen(false)}
+        onSaved={(updated) => {
+          setBusiness((prev) => ({ ...prev, ...updated }))
+          setSuccess('Business updated successfully')
+          setEditOpen(false)
+        }}
+      />
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import { TableActionsCell, TableActionsHeader, TableIconButton } from '../components/TableActions'
 import { formatDate } from '../utils/format'
 
 const VERIFIED_FILTERS = ['all', 'verified', 'unverified']
@@ -162,7 +163,7 @@ export default function UsersPage() {
               <th className="px-4 py-3 font-medium text-gray-700">Reviews</th>
               <th className="px-4 py-3 font-medium text-gray-700">Verified</th>
               <th className="px-4 py-3 font-medium text-gray-700">Joined</th>
-              {canWrite && <th className="px-4 py-3 font-medium text-gray-700">Actions</th>}
+              {canWrite && <TableActionsHeader />}
             </tr>
           </thead>
           <tbody>
@@ -189,16 +190,15 @@ export default function UsersPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(user.created_at)}</td>
                   {canWrite && (
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
+                    <TableActionsCell>
+                      <TableIconButton
+                        variant="danger"
+                        title="Remove user"
                         onClick={() => handleDelete(user)}
-                        className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Remove
-                      </button>
-                    </td>
+                        <Trash2 className="h-4 w-4" />
+                      </TableIconButton>
+                    </TableActionsCell>
                   )}
                 </tr>
               ))

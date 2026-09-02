@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, MessageSquare, Search, X } from 'lucide-react'
+import { Check, Eye, MessageSquare, Search, X } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
-import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import {
+  TableActionButton,
+  TableActionsCell,
+  TableActionsHeader,
+  TableIconButton,
+} from '../components/TableActions'
 import { REVIEW_STATUS } from '../utils/constants'
 import { formatDate } from '../utils/format'
 import { requestCrmBadgesRefresh } from '../utils/crmEvents'
@@ -151,7 +156,7 @@ export default function ReviewsPage() {
               <th className="px-4 py-3 font-medium text-gray-700">Reply</th>
               <th className="px-4 py-3 font-medium text-gray-700">Status</th>
               <th className="px-4 py-3 font-medium text-gray-700">Date</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Actions</th>
+              <TableActionsHeader />
             </tr>
           </thead>
           <tbody>
@@ -205,33 +210,33 @@ export default function ReviewsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(review.created_at)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/reviews/${review.id}`}
-                        title="View details"
-                        aria-label={`View review ${review.title || review.id}`}
-                        className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-primary-600"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                      <Button
-                        size="sm"
-                        disabled={actionId === review.id}
-                        onClick={() => moderate(review.id, REVIEW_STATUS.PUBLISHED)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        disabled={actionId === review.id}
-                        onClick={() => moderate(review.id, REVIEW_STATUS.REJECTED)}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </td>
+                  <TableActionsCell>
+                    <TableIconButton
+                      to={`/reviews/${review.id}`}
+                      title="View review details"
+                      ariaLabel={`View review ${review.title || review.id}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </TableIconButton>
+                    <TableActionButton
+                      variant="success"
+                      icon={Check}
+                      disabled={actionId === review.id}
+                      onClick={() => moderate(review.id, REVIEW_STATUS.PUBLISHED)}
+                      title="Approve review"
+                    >
+                      Approve
+                    </TableActionButton>
+                    <TableActionButton
+                      variant="danger"
+                      icon={X}
+                      disabled={actionId === review.id}
+                      onClick={() => moderate(review.id, REVIEW_STATUS.REJECTED)}
+                      title="Reject review"
+                    >
+                      Reject
+                    </TableActionButton>
+                  </TableActionsCell>
                 </tr>
               ))
             )}

@@ -61,6 +61,13 @@ export const adminApi = {
   seedCategories: () => api.post('/admin/categories/seed'),
   createCategory: (name) => api.post('/admin/categories/main', { name }),
   createBusiness: (data) => api.post('/admin/businesses', data),
+  updateBusiness: (id, data) => api.patch(`/admin/businesses/${id}`, data),
+  uploadBusinessLogo: (id, file) => {
+    const formData = new FormData()
+    formData.append('logo', file)
+    return api.upload(`/admin/businesses/${id}/logo`, formData)
+  },
+  removeBusinessLogo: (id) => api.delete(`/admin/businesses/${id}/logo`),
   getReviews: () => api.get('/admin/reviews'),
   getReview: (id) => api.get(`/admin/reviews/${id}`),
   getFlaggedReviews: () => api.get('/admin/reviews/flagged'),

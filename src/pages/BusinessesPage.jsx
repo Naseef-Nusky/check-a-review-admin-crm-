@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Search, Trash2, X } from 'lucide-react'
+import { Ban, Eye, Globe, Pencil, Search, Trash2, X } from 'lucide-react'
 import { adminApi } from '../services/api'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import CreateBusinessWizard from '../components/CreateBusinessWizard'
-import Button from '../components/Button'
+import EditBusinessModal from '../components/EditBusinessModal'
+import {
+  TableActionButton,
+  TableActionsCell,
+  TableActionsHeader,
+  TableIconButton,
+} from '../components/TableActions'
 import { formatDate } from '../utils/format'
 import { requestCrmBadgesRefresh } from '../utils/crmEvents'
 import StarRating from '../components/StarRating'
@@ -26,14 +32,15 @@ function ListingToggleButton({ biz, busy, onToggle }) {
   const isPublished = (biz.status || 'published') === 'published'
 
   return (
-    <Button
-      size="sm"
+    <TableActionButton
       variant={isPublished ? 'secondary' : 'primary'}
+      icon={isPublished ? Ban : Globe}
       disabled={busy}
       onClick={onToggle}
+      title={busy ? 'Saving...' : isPublished ? 'Unpublish listing' : 'Publish listing'}
     >
       {busy ? 'Saving...' : isPublished ? 'Unpublish' : 'Publish'}
-    </Button>
+    </TableActionButton>
   )
 }
 
@@ -46,6 +53,7 @@ export default function BusinessesPage() {
   const [moderatingId, setModeratingId] = useState('')
   const [actionError, setActionError] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+  const [editingBusiness, setEditingBusiness] = useState(null)
   const [filters, setFilters] = useState({
     search: '',
     category: 'all',
@@ -271,10 +279,29 @@ export default function BusinessesPage() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         categoryTree={categoryTree}
-        createBusiness={(payload) => adminApi.createBusiness(payload)}
+        createBusiness={async (payload, logoFile) => {
+          const business = await adminApi.createBusiness(payload)
+          if (logoFile && business?.id) {
+            await adminApi.uploadBusinessLogo(business.id, logoFile)
+          }
+          return business
+        }}
         onCreated={() => {
           setAddOpen(false)
           load()
+        }}
+      />
+
+      <EditBusinessModal
+        open={Boolean(editingBusiness)}
+        business={editingBusiness}
+        categoryTree={categoryTree}
+        onClose={() => setEditingBusiness(null)}
+        onSaved={(updated) => {
+          setBusinesses((prev) =>
+            prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+          )
+          setEditingBusiness(null)
         }}
       />
 
@@ -290,7 +317,7 @@ export default function BusinessesPage() {
             <col className="w-[88px]" />
             <col className="w-[168px]" />
             <col className="w-[104px]" />
-            <col className="w-[176px]" />
+            <col className="w-[7.5rem] sm:w-[11rem]" />
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
@@ -303,7 +330,7 @@ export default function BusinessesPage() {
               <th className="px-4 py-3 font-medium text-gray-700">Plan</th>
               <th className="px-4 py-3 font-medium text-gray-700">Owner</th>
               <th className="px-4 py-3 font-medium text-gray-700">Joined</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Actions</th>
+              <TableActionsHeader />
             </tr>
           </thead>
           <tbody>
@@ -385,33 +412,32 @@ export default function BusinessesPage() {
                     <p className="truncate" title={biz.owner_email || undefined}>{biz.owner_email || '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(biz.created_at)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`/businesses/${biz.id}`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-slate-600 hover:bg-slate-50"
-                        title="View"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                      <ListingToggleButton
-                        biz={biz}
-                        busy={moderatingId === biz.id}
-                        onToggle={() =>
-                          handleModerate(biz, (biz.status || 'published') === 'published' ? 'pending' : 'published')
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(biz)}
-                        disabled={deletingId === biz.id}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        title="Remove"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+                  <TableActionsCell>
+                    <TableIconButton to={`/businesses/${biz.id}`} title="View business">
+                      <Eye className="h-4 w-4" />
+                    </TableIconButton>
+                    <TableIconButton
+                      title="Edit business"
+                      onClick={() => setEditingBusiness(biz)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </TableIconButton>
+                    <ListingToggleButton
+                      biz={biz}
+                      busy={moderatingId === biz.id}
+                      onToggle={() =>
+                        handleModerate(biz, (biz.status || 'published') === 'published' ? 'pending' : 'published')
+                      }
+                    />
+                    <TableIconButton
+                      variant="danger"
+                      title="Remove business"
+                      disabled={deletingId === biz.id}
+                      onClick={() => handleDelete(biz)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </TableIconButton>
+                  </TableActionsCell>
                 </tr>
               ))
             )}

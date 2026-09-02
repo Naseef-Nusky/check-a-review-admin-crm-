@@ -6,6 +6,12 @@ import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import Button from '../components/Button'
+import {
+  TableActionButton,
+  TableActionsCell,
+  TableActionsHeader,
+  TableIconButton,
+} from '../components/TableActions'
 import { crmRoleLabel } from '../utils/constants'
 import { formatDate } from '../utils/format'
 import PasswordInput from '../components/PasswordInput'
@@ -150,7 +156,7 @@ export default function StaffPage() {
               <th className="px-4 py-3 font-medium text-gray-700">Email</th>
               <th className="px-4 py-3 font-medium text-gray-700">Role</th>
               <th className="px-4 py-3 font-medium text-gray-700">Joined</th>
-              {isSuperAdmin && <th className="px-4 py-3 font-medium text-gray-700">Actions</th>}
+              {isSuperAdmin && <TableActionsHeader />}
             </tr>
           </thead>
           <tbody>
@@ -180,30 +186,29 @@ export default function StaffPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(member.created_at)}</td>
                   {isSuperAdmin && (
-                    <td className="px-4 py-3">
+                    <TableActionsCell>
                       {member.role === 'super_admin' ? (
                         <span className="text-xs text-gray-400">Protected</span>
                       ) : (
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
+                        <>
+                          <TableActionButton
+                            variant="secondary"
+                            icon={Pencil}
+                            title="Edit staff member"
                             onClick={() => startEdit(member)}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700"
                           >
-                            <Pencil className="h-3.5 w-3.5" />
                             Edit
-                          </button>
-                          <button
-                            type="button"
+                          </TableActionButton>
+                          <TableIconButton
+                            variant="danger"
+                            title="Remove staff member"
                             onClick={() => handleDelete(member.id, member.name)}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Remove
-                          </button>
-                        </div>
+                            <Trash2 className="h-4 w-4" />
+                          </TableIconButton>
+                        </>
                       )}
-                    </td>
+                    </TableActionsCell>
                   )}
                 </tr>
               ))
