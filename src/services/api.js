@@ -42,6 +42,7 @@ export const api = {
 export const adminApi = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: () => api.get('/admin/users'),
+  createUser: (data) => api.post('/admin/users', data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   getStaff: () => api.get('/admin/staff'),
   createStaff: (data) => api.post('/admin/staff', data),
@@ -70,6 +71,7 @@ export const adminApi = {
   },
   removeBusinessLogo: (id) => api.delete(`/admin/businesses/${id}/logo`),
   getReviews: () => api.get('/admin/reviews'),
+  createReview: (data) => api.post('/admin/reviews', data),
   getReview: (id) => api.get(`/admin/reviews/${id}`),
   getFlaggedReviews: () => api.get('/admin/reviews/flagged'),
   moderateReview: (id, status) => api.patch(`/admin/reviews/${id}/moderate`, { status }),

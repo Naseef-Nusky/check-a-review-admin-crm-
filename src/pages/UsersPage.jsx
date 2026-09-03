@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Trash2, X } from 'lucide-react'
+import { Plus, Search, Trash2, X } from 'lucide-react'
 import { adminApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import Button from '../components/Button'
+import PasswordInput from '../components/PasswordInput'
 import { TableActionsCell, TableActionsHeader, TableIconButton } from '../components/TableActions'
 import { formatDate } from '../utils/format'
 
 const VERIFIED_FILTERS = ['all', 'verified', 'unverified']
 const REVIEW_FILTERS = ['all', 'has_reviews', 'no_reviews']
+const emptyForm = { name: '', email: '', password: '', confirmPassword: '' }
 
 export default function UsersPage() {
   const { canWrite } = useAuth()
@@ -21,6 +24,10 @@ export default function UsersPage() {
     verified: 'all',
     reviews: 'all',
   })
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
 
   const load = () => {
     setLoading(true)
@@ -65,6 +72,50 @@ export default function UsersPage() {
     })
   }
 
+  const closeModal = () => {
+    if (saving) return
+    setModalOpen(false)
+    setForm(emptyForm)
+    setFormError('')
+  }
+
+  const openCreate = () => {
+    setForm(emptyForm)
+    setFormError('')
+    setModalOpen(true)
+  }
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    if (!canWrite) return
+    setFormError('')
+
+    if (form.password !== form.confirmPassword) {
+      setFormError('Passwords do not match')
+      return
+    }
+    if (form.password.length < 8) {
+      setFormError('Password must be at least 8 characters')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await adminApi.createUser({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+      })
+      setModalOpen(false)
+      setForm(emptyForm)
+      load()
+    } catch (err) {
+      setFormError(err.message || 'Could not create user')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleDelete = async (user) => {
     if (!canWrite) return
     if (
@@ -87,7 +138,21 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader title="Manage Users" description="View and remove reviewer accounts" />
+      <PageHeader
+        title="Manage Users"
+        description="Create, view, and remove reviewer (customer) accounts"
+      >
+        {canWrite && (
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create user
+          </button>
+        )}
+      </PageHeader>
 
       {!canWrite && (
         <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -206,6 +271,104 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {modalOpen && canWrite && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:px-4 sm:py-10">
+          <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" onClick={closeModal} aria-hidden="true" />
+          <div className="relative z-10 max-h-[96vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-ink">Create user</h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Same fields as the public signup form. Account is created verified (no email code).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-4" autoComplete="off">
+              {formError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {formError}
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="create-user-name">
+                  Full name
+                </label>
+                <input
+                  id="create-user-name"
+                  required
+                  name="crm-user-name"
+                  autoComplete="off"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="create-user-email">
+                  Email
+                </label>
+                <input
+                  id="create-user-email"
+                  type="email"
+                  required
+                  name="crm-user-email"
+                  autoComplete="off"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  className="input-field"
+                />
+              </div>
+
+              <PasswordInput
+                id="create-user-password"
+                name="crm-user-password"
+                autoComplete="new-password"
+                label="Password"
+                required
+                minLength={8}
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                placeholder=""
+                labelClassName="mb-1.5 block text-sm font-medium text-gray-700"
+              />
+
+              <PasswordInput
+                id="create-user-confirm-password"
+                name="crm-user-confirm-password"
+                autoComplete="new-password"
+                label="Confirm password"
+                required
+                minLength={8}
+                value={form.confirmPassword}
+                onChange={(e) => setForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                placeholder=""
+                labelClassName="mb-1.5 block text-sm font-medium text-gray-700"
+              />
+
+              <div className="flex flex-wrap justify-end gap-2 pt-2">
+                <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Creating...' : 'Create user'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

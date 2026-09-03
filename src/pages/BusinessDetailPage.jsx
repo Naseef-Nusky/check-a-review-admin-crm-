@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react'
 import { adminApi } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import StarRating from '../components/StarRating'
 import BusinessLogo from '../components/BusinessLogo'
 import EditBusinessModal from '../components/EditBusinessModal'
+import CreateReviewModal from '../components/CreateReviewModal'
 import {
   cancellationNotice,
   formatCurrency,
@@ -38,6 +40,7 @@ function DetailItem({ label, children }) {
 export default function BusinessDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { canWrite } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') === 'reviews' ? 'reviews' : 'overview'
 
@@ -53,6 +56,7 @@ export default function BusinessDetailPage() {
   const [moderating, setModerating] = useState(false)
   const [moderateError, setModerateError] = useState('')
   const [editOpen, setEditOpen] = useState(false)
+  const [createReviewOpen, setCreateReviewOpen] = useState(false)
   const [categoryTree, setCategoryTree] = useState([])
 
   const setTab = (tab) => {
@@ -291,6 +295,18 @@ export default function BusinessDetailPage() {
 
       {activeTab === 'reviews' ? (
         <div className="space-y-4">
+          {canWrite ? (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCreateReviewOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add review
+              </button>
+            </div>
+          ) : null}
           {reviewsLoading ? <LoadingSpinner /> : null}
           {reviewsError ? <ErrorMessage message={reviewsError} onRetry={loadReviews} /> : null}
           {!reviewsLoading && !reviewsError && reviews.length === 0 ? (
@@ -517,6 +533,23 @@ export default function BusinessDetailPage() {
           setBusiness((prev) => ({ ...prev, ...updated }))
           setSuccess('Business updated successfully')
           setEditOpen(false)
+        }}
+      />
+
+      <CreateReviewModal
+        open={createReviewOpen}
+        onClose={() => setCreateReviewOpen(false)}
+        initialBusinessId={id}
+        lockBusiness
+        onCreated={async () => {
+          loadReviews()
+          requestCrmBadgesRefresh()
+          try {
+            const updated = await adminApi.getBusiness(id)
+            setBusiness(updated)
+          } catch {
+            /* keep current business card */
+          }
         }}
       />
     </div>

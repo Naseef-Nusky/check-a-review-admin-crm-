@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Eye, MessageSquare, Search, X } from 'lucide-react'
+import { Check, Eye, MessageSquare, Plus, Search, X } from 'lucide-react'
 import { adminApi } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import CreateReviewModal from '../components/CreateReviewModal'
 import {
   TableActionButton,
   TableActionsCell,
@@ -27,10 +29,12 @@ const STATUS_FILTERS = ['all', 'pending', 'published', 'rejected', 'reported']
 const REPLY_FILTERS = ['all', 'with_reply', 'no_reply']
 
 export default function ReviewsPage() {
+  const { canWrite } = useAuth()
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionId, setActionId] = useState(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
@@ -102,7 +106,24 @@ export default function ReviewsPage() {
 
   return (
     <div>
-      <PageHeader title="Moderate Reviews" description="View review details, replies, and moderate content" />
+      <PageHeader title="Moderate Reviews" description="Add reviews to businesses, view replies, and moderate content">
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
+          >
+            <Plus className="h-4 w-4" />
+            Add review
+          </button>
+        )}
+      </PageHeader>
+
+      {!canWrite && (
+        <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Viewers have read-only access. Ask an admin to add or moderate reviews.
+        </p>
+      )}
 
       <div className="card mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,1fr))_auto]">
@@ -243,6 +264,15 @@ export default function ReviewsPage() {
           </tbody>
         </table>
       </div>
+
+      <CreateReviewModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => {
+          load()
+          requestCrmBadgesRefresh()
+        }}
+      />
     </div>
   )
 }
