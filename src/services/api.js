@@ -59,6 +59,7 @@ export const adminApi = {
   deleteMainCategory: (id) => api.delete(`/admin/categories/main/${id}`),
   deleteSubCategory: (id) => api.delete(`/admin/categories/sub/${id}`),
   seedCategories: () => api.post('/admin/categories/seed'),
+  syncBusinessCategories: () => api.post('/admin/categories/sync-businesses'),
   createCategory: (name) => api.post('/admin/categories/main', { name }),
   createBusiness: (data) => api.post('/admin/businesses', data),
   updateBusiness: (id, data) => api.patch(`/admin/businesses/${id}`, data),

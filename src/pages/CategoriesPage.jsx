@@ -16,7 +16,9 @@ export default function CategoriesPage() {
   const [submittingMain, setSubmittingMain] = useState(false)
   const [submittingSub, setSubmittingSub] = useState(false)
   const [seeding, setSeeding] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [syncMessage, setSyncMessage] = useState('')
   const [expanded, setExpanded] = useState({})
   const [editingMainId, setEditingMainId] = useState(null)
   const [editingMainName, setEditingMainName] = useState('')
@@ -91,13 +93,32 @@ export default function CategoriesPage() {
   const handleSeed = async () => {
     setSeeding(true)
     setSubmitError('')
+    setSyncMessage('')
     try {
       await adminApi.seedCategories()
       load()
+      setSyncMessage('Default category tree seeded.')
     } catch (err) {
       setSubmitError(err.message || 'Failed to seed categories')
     } finally {
       setSeeding(false)
+    }
+  }
+
+  const handleSyncBusinesses = async () => {
+    setSyncing(true)
+    setSubmitError('')
+    setSyncMessage('')
+    try {
+      const result = await adminApi.syncBusinessCategories()
+      load()
+      setSyncMessage(
+        `Synced business categories: ${result.createdSubs || 0} new subcategories, ${result.businessesUpdated || 0} businesses updated (${result.mains || 0} mains / ${result.subs || 0} subs total).`,
+      )
+    } catch (err) {
+      setSubmitError(err.message || 'Failed to sync business categories')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -286,15 +307,31 @@ export default function CategoriesPage() {
           <h2 className="text-lg font-semibold text-slate-900">Category tree</h2>
           <p className="text-sm text-slate-500">Edit or delete any main category or subcategory, including defaults.</p>
         </div>
-        <button
-          type="button"
-          onClick={handleSeed}
-          disabled={seeding}
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
-        >
-          {seeding ? 'Seeding...' : 'Seed missing defaults'}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleSyncBusinesses}
+            disabled={syncing || seeding}
+            className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
+          >
+            {syncing ? 'Syncing...' : 'Sync from businesses'}
+          </button>
+          <button
+            type="button"
+            onClick={handleSeed}
+            disabled={seeding || syncing}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            {seeding ? 'Seeding...' : 'Seed missing defaults'}
+          </button>
+        </div>
       </div>
+
+      {syncMessage ? (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {syncMessage}
+        </div>
+      ) : null}
 
       <div className="card overflow-hidden">
         {categories.length === 0 ? (
