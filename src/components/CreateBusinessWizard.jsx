@@ -12,6 +12,8 @@ const employeeOptions = ['1-9', '10-49', '50-249', '250-999', '1000+']
 
 const emptyForm = {
   location: 'United Kingdom',
+  address: '',
+  postalCode: '',
   name: '',
   website: '',
   mainCategoryId: '',
@@ -124,8 +126,8 @@ export default function CreateBusinessWizard({
 
   const validateStep = () => {
     if (step === 0) {
-      if (!form.location || !form.name || !form.website || !form.mainCategoryId || !form.category) {
-        return 'Please complete all business details fields.'
+      if (!form.location || !form.address.trim() || !form.name || !form.website || !form.mainCategoryId || !form.category) {
+        return 'Please complete all business details fields, including address.'
       }
     }
     if (step === 1) {
@@ -173,8 +175,12 @@ export default function CreateBusinessWizard({
           category: form.category,
           website: normalizeWebsite(form.website),
           phone: `${form.phoneCode} ${form.phone}`.trim() || null,
-          address: form.location || null,
+          address: [form.address.trim(), form.postalCode.trim(), form.location]
+            .filter(Boolean)
+            .join(', '),
           description: `Location: ${form.location}
+Address: ${form.address.trim()}
+ZIP / Postal code: ${form.postalCode.trim() || '—'}
 Job title: ${form.jobTitle}
 Annual revenue: ${form.annualRevenue}
 Employees: ${form.employeeCount}
@@ -243,7 +249,7 @@ Contact: ${form.firstName} ${form.lastName}`.trim(),
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
                     <label className="label-text text-slate-700" htmlFor="crmLocation">
-                      Business location
+                      Country
                     </label>
                     <div className="relative">
                       <select
@@ -308,6 +314,34 @@ Contact: ${form.firstName} ${form.lastName}`.trim(),
                     <p className="mt-2 text-xs text-slate-400">
                       Enter a live website address, e.g. yourbusiness.com. DNS is checked before creating the listing.
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="label-text text-slate-700" htmlFor="crmAddress">
+                      Address
+                    </label>
+                    <input
+                      id="crmAddress"
+                      className="input-field"
+                      value={form.address}
+                      onChange={update('address')}
+                      placeholder="Street address"
+                      autoComplete="street-address"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="label-text text-slate-700" htmlFor="crmPostalCode">
+                      ZIP / Postal code
+                    </label>
+                    <input
+                      id="crmPostalCode"
+                      className="input-field"
+                      value={form.postalCode}
+                      onChange={update('postalCode')}
+                      placeholder="Optional"
+                      autoComplete="postal-code"
+                    />
                   </div>
 
                   <div>

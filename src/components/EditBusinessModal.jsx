@@ -5,6 +5,71 @@ import BusinessLogo from './BusinessLogo'
 import Button from './Button'
 import LogoUploader from './LogoUploader'
 import { resolveMediaUrl } from '../utils/constants'
+import { BUSINESS_LOCATIONS } from '../utils/locations'
+import { PHONE_COUNTRY_CODES } from '../utils/phoneCountryCodes'
+
+const REVENUE_OPTIONS = ['Under £500K', '£500K - £4.99 million', '£5 million - £24.99 million', '£25 million+']
+const EMPLOYEE_OPTIONS = ['1-9', '10-49', '50-249', '250-999', '1000+']
+
+function parseLabeledValue(text, label) {
+  const match = String(text || '').match(new RegExp(`^${label}:\\s*(.*)$`, 'im'))
+  const value = match?.[1]?.trim() || ''
+  return value === '—' ? '' : value
+}
+
+function splitStoredAddress(address, description) {
+  const raw = String(address || '').trim()
+  const descCountry = parseLabeledValue(description, 'Location')
+  const descAddress = parseLabeledValue(description, 'Address')
+  const descPostal = parseLabeledValue(description, 'ZIP \\/ Postal code')
+
+  if (descAddress || descPostal || descCountry) {
+    return {
+      location: descCountry || '',
+      address: descAddress || raw,
+      postalCode: descPostal,
+    }
+  }
+
+  if (!raw) return { location: 'United Kingdom', address: '', postalCode: '' }
+
+  const parts = raw.split(',').map((part) => part.trim()).filter(Boolean)
+  const last = parts[parts.length - 1] || ''
+  const secondLast = parts[parts.length - 2] || ''
+  const location = BUSINESS_LOCATIONS.includes(last) ? last : ''
+  const postalCode = location && secondLast && !BUSINESS_LOCATIONS.includes(secondLast) ? secondLast : ''
+  const streetParts = location
+    ? parts.slice(0, postalCode ? -2 : -1)
+    : parts
+
+  return {
+    location: location || 'United Kingdom',
+    address: streetParts.join(', '),
+    postalCode,
+  }
+}
+
+function splitOwnerName(name) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return { firstName: '', lastName: '' }
+  const [firstName, ...rest] = trimmed.split(/\s+/)
+  return { firstName, lastName: rest.join(' ') }
+}
+
+function splitPhone(phone) {
+  const raw = String(phone || '').trim()
+  const match = raw.match(/^(\+\d{1,4})\s*(.*)$/)
+  if (!match) {
+    return { phoneCode: '+44', phoneCountry: 'United Kingdom', phone: raw }
+  }
+  const phoneCode = match[1]
+  const country = PHONE_COUNTRY_CODES.find((item) => item.code === phoneCode)
+  return {
+    phoneCode,
+    phoneCountry: country?.name || 'United Kingdom',
+    phone: match[2] || '',
+  }
+}
 
 function SelectChevron() {
   return (
@@ -32,16 +97,26 @@ function resolveCategorySelection(categoryTree, categoryName) {
 
 function buildForm(business, categoryTree) {
   const { mainCategoryId, category } = resolveCategorySelection(categoryTree, business?.category)
+  const { location, address, postalCode } = splitStoredAddress(business?.address, business?.description)
+  const { firstName, lastName } = splitOwnerName(business?.owner_name)
+  const { phoneCode, phoneCountry, phone } = splitPhone(business?.phone)
   return {
     name: business?.name || '',
+    location: location || 'United Kingdom',
+    address,
+    postalCode,
     mainCategoryId,
     category,
-    description: business?.description || '',
     website: business?.website || '',
     email: business?.email || '',
-    phone: business?.phone || '',
-    address: business?.address || '',
-    owner_name: business?.owner_name || '',
+    phoneCode,
+    phoneCountry,
+    phone,
+    jobTitle: parseLabeledValue(business?.description, 'Job title'),
+    annualRevenue: parseLabeledValue(business?.description, 'Annual revenue'),
+    employeeCount: parseLabeledValue(business?.description, 'Employees'),
+    firstName,
+    lastName,
     owner_email: business?.owner_email || '',
   }
 }
@@ -135,6 +210,14 @@ export default function EditBusinessModal({ open, business, categoryTree = [], o
       setError('Business name is required')
       return
     }
+    if (!form.location) {
+      setError('Country is required')
+      return
+    }
+    if (!form.address.trim()) {
+      setError('Address is required')
+      return
+    }
     if (!form.category.trim()) {
       setError('Category is required')
       return
@@ -151,16 +234,23 @@ export default function EditBusinessModal({ open, business, categoryTree = [], o
     setSaving(true)
     setError('')
     try {
+      const ownerName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(' ')
       const payload = {
         name: form.name.trim(),
         category: form.category.trim(),
-        description: form.description.trim() || null,
         website: form.website.trim() || null,
         email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
-        address: form.address.trim() || null,
-        owner_name: form.owner_name.trim() || null,
+        phone: `${form.phoneCode} ${form.phone}`.trim() || null,
+        address: [form.address.trim(), form.postalCode.trim(), form.location].filter(Boolean).join(', '),
+        owner_name: ownerName || null,
         owner_email: form.owner_email.trim() || null,
+        description: `Location: ${form.location}
+Address: ${form.address.trim()}
+ZIP / Postal code: ${form.postalCode.trim() || '—'}
+Job title: ${form.jobTitle.trim() || '—'}
+Annual revenue: ${form.annualRevenue || '—'}
+Employees: ${form.employeeCount || '—'}
+Contact: ${ownerName || '—'}`.trim(),
       }
 
       const updated = await adminApi.updateBusiness(currentBusiness.id, payload)
@@ -245,6 +335,59 @@ export default function EditBusinessModal({ open, business, categoryTree = [], o
               </div>
 
               <div>
+                <label htmlFor="edit-location" className="label-text">
+                  Country
+                </label>
+                <div className="relative mt-1">
+                  <select
+                    id="edit-location"
+                    className="input-field appearance-none pr-10"
+                    value={form.location}
+                    onChange={update('location')}
+                  >
+                    {BUSINESS_LOCATIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                    {form.location && !BUSINESS_LOCATIONS.includes(form.location) ? (
+                      <option value={form.location}>{form.location}</option>
+                    ) : null}
+                  </select>
+                  <SelectChevron />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="edit-postal-code" className="label-text">
+                  ZIP / Postal code
+                </label>
+                <input
+                  id="edit-postal-code"
+                  className="input-field mt-1"
+                  value={form.postalCode}
+                  onChange={update('postalCode')}
+                  placeholder="Optional"
+                  autoComplete="postal-code"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label htmlFor="edit-address" className="label-text">
+                  Address
+                </label>
+                <input
+                  id="edit-address"
+                  required
+                  className="input-field mt-1"
+                  value={form.address}
+                  onChange={update('address')}
+                  placeholder="Street address"
+                  autoComplete="street-address"
+                />
+              </div>
+
+              <div>
                 <label htmlFor="edit-main-category" className="label-text">
                   Main category
                 </label>
@@ -294,19 +437,6 @@ export default function EditBusinessModal({ open, business, categoryTree = [], o
                 </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <label htmlFor="edit-description" className="label-text">
-                  Description
-                </label>
-                <textarea
-                  id="edit-description"
-                  rows={4}
-                  className="input-field mt-1"
-                  value={form.description}
-                  onChange={update('description')}
-                />
-              </div>
-
               <div>
                 <label htmlFor="edit-website" className="label-text">
                   Website
@@ -333,39 +463,126 @@ export default function EditBusinessModal({ open, business, categoryTree = [], o
               </div>
 
               <div>
+                <label htmlFor="edit-job-title" className="label-text">
+                  Job title
+                </label>
+                <input
+                  id="edit-job-title"
+                  className="input-field mt-1"
+                  value={form.jobTitle}
+                  onChange={update('jobTitle')}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="edit-revenue" className="label-text">
+                  Annual revenue
+                </label>
+                <div className="relative mt-1">
+                  <select
+                    id="edit-revenue"
+                    className="input-field appearance-none pr-10"
+                    value={form.annualRevenue}
+                    onChange={update('annualRevenue')}
+                  >
+                    <option value="">Select annual revenue</option>
+                    {REVENUE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                    {form.annualRevenue && !REVENUE_OPTIONS.includes(form.annualRevenue) ? (
+                      <option value={form.annualRevenue}>{form.annualRevenue}</option>
+                    ) : null}
+                  </select>
+                  <SelectChevron />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="edit-employees" className="label-text">
+                  Number of employees
+                </label>
+                <div className="relative mt-1">
+                  <select
+                    id="edit-employees"
+                    className="input-field appearance-none pr-10"
+                    value={form.employeeCount}
+                    onChange={update('employeeCount')}
+                  >
+                    <option value="">Select team size</option>
+                    {EMPLOYEE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                    {form.employeeCount && !EMPLOYEE_OPTIONS.includes(form.employeeCount) ? (
+                      <option value={form.employeeCount}>{form.employeeCount}</option>
+                    ) : null}
+                  </select>
+                  <SelectChevron />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="edit-first-name" className="label-text">
+                  Owner first name
+                </label>
+                <input
+                  id="edit-first-name"
+                  className="input-field mt-1"
+                  value={form.firstName}
+                  onChange={update('firstName')}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="edit-last-name" className="label-text">
+                  Owner last name
+                </label>
+                <input
+                  id="edit-last-name"
+                  className="input-field mt-1"
+                  value={form.lastName}
+                  onChange={update('lastName')}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
                 <label htmlFor="edit-phone" className="label-text">
                   Phone
                 </label>
-                <input
-                  id="edit-phone"
-                  className="input-field mt-1"
-                  value={form.phone}
-                  onChange={update('phone')}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="edit-address" className="label-text">
-                  Address / location
-                </label>
-                <input
-                  id="edit-address"
-                  className="input-field mt-1"
-                  value={form.address}
-                  onChange={update('address')}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="edit-owner-name" className="label-text">
-                  Owner name
-                </label>
-                <input
-                  id="edit-owner-name"
-                  className="input-field mt-1"
-                  value={form.owner_name}
-                  onChange={update('owner_name')}
-                />
+                <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)]">
+                  <div className="relative">
+                    <select
+                      id="edit-phone-code"
+                      className="input-field appearance-none pr-10"
+                      value={`${form.phoneCode}|${form.phoneCountry || ''}`}
+                      onChange={(e) => {
+                        const [code, ...nameParts] = e.target.value.split('|')
+                        setForm((prev) => ({
+                          ...prev,
+                          phoneCode: code,
+                          phoneCountry: nameParts.join('|'),
+                        }))
+                      }}
+                    >
+                      {PHONE_COUNTRY_CODES.map((country) => (
+                        <option key={`${country.name}-${country.code}`} value={`${country.code}|${country.name}`}>
+                          {country.name} ({country.code})
+                        </option>
+                      ))}
+                    </select>
+                    <SelectChevron />
+                  </div>
+                  <input
+                    id="edit-phone"
+                    type="tel"
+                    className="input-field"
+                    value={form.phone}
+                    onChange={update('phone')}
+                  />
+                </div>
               </div>
 
               <div>

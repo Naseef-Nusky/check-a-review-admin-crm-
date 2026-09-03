@@ -20,6 +20,7 @@ import SettingsPage from '../pages/SettingsPage'
 import PricingPage from '../pages/PricingPage'
 import BillingPlansPage from '../pages/BillingPlansPage'
 import WidgetDesignsPage from '../pages/WidgetDesignsPage'
+import ReportsPage from '../pages/ReportsPage'
 
 function LoginRedirect() {
   const { isAuthenticated } = useAuth()
@@ -48,6 +49,7 @@ export default function AppRoutes() {
           <Route path="reviews/:id" element={<ReviewDetailPage />} />
           <Route path="businesses/:id/reviews" element={<BusinessReviewsPage />} />
           <Route path="flagged" element={<FlaggedReviewsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="pending-businesses" element={<PendingBusinessesPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="payments" element={<PaymentsPage />} />

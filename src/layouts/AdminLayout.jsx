@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import {
   AlertTriangle,
   Building2,
+  Flag,
   FolderTree,
   CreditCard,
   LayoutDashboard,
@@ -35,6 +36,7 @@ const sidebarLinks = [
   { to: '/categories', label: 'Categories', icon: FolderTree },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
   { to: '/flagged', label: 'Pending reviews', icon: AlertTriangle, badgeKey: 'pendingReviews' },
+  { to: '/reports', label: 'Review reports', icon: Flag, badgeKey: 'openReports' },
   { to: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { to: '/payments', label: 'Payments', icon: Receipt },
   { to: '/billing-plans', label: 'Billing plans', icon: WalletCards },
@@ -108,6 +110,7 @@ function AdminShell({ setHeaderSlot }) {
   const [navBadges, setNavBadges] = useState({
     pendingBusinesses: 0,
     pendingReviews: 0,
+    openReports: 0,
   })
 
   const refreshUnread = useCallback(async () => {
@@ -121,10 +124,15 @@ function AdminShell({ setHeaderSlot }) {
 
   const refreshNavBadges = useCallback(async () => {
     try {
-      const stats = await adminApi.getDashboard()
+      const [stats, reports] = await Promise.all([
+        adminApi.getDashboard(),
+        adminApi.getReports().catch(() => []),
+      ])
+      const openReports = Array.isArray(reports) ? reports.filter((r) => r.status === 'open').length : 0
       setNavBadges({
         pendingBusinesses: Number(stats?.pendingBusinesses) || 0,
         pendingReviews: Number(stats?.flaggedReviews) || 0,
+        openReports,
       })
     } catch {
       // ignore polling errors
@@ -139,6 +147,9 @@ function AdminShell({ setHeaderSlot }) {
         await refreshUnread()
       } else if (path === '/flagged') {
         await adminApi.markNotificationsReadByType('pending_review')
+        await refreshUnread()
+      } else if (path === '/reports') {
+        await adminApi.markNotificationsReadByType('review_report')
         await refreshUnread()
       }
     } catch {
