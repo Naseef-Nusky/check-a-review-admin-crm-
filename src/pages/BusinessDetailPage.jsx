@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
 import { adminApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
@@ -42,12 +42,20 @@ export default function BusinessDetailPage() {
   const navigate = useNavigate()
   const { canWrite } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('tab') === 'reviews' ? 'reviews' : 'overview'
+  const activeTab =
+    searchParams.get('tab') === 'reviews'
+      ? 'reviews'
+      : searchParams.get('tab') === 'ownership'
+        ? 'ownership'
+        : 'overview'
 
   const [business, setBusiness] = useState(null)
   const [reviews, setReviews] = useState([])
   const [payments, setPayments] = useState([])
+  const [members, setMembers] = useState([])
+  const [ownershipHistory, setOwnershipHistory] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [ownershipLoading, setOwnershipLoading] = useState(false)
   const [reviewsError, setReviewsError] = useState('')
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -58,9 +66,20 @@ export default function BusinessDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [createReviewOpen, setCreateReviewOpen] = useState(false)
   const [categoryTree, setCategoryTree] = useState([])
+  const [addUserForm, setAddUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'member',
+    makeOwner: false,
+  })
+  const [ownershipBusy, setOwnershipBusy] = useState(false)
+  const [selectedOwnerMemberId, setSelectedOwnerMemberId] = useState('')
+  const [showAddUserPassword, setShowAddUserPassword] = useState(false)
 
   const setTab = (tab) => {
     if (tab === 'reviews') setSearchParams({ tab: 'reviews' })
+    else if (tab === 'ownership') setSearchParams({ tab: 'ownership' })
     else setSearchParams({})
   }
 
@@ -112,6 +131,79 @@ export default function BusinessDetailPage() {
     loadReviews()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, id])
+
+  const loadOwnership = () => {
+    setOwnershipLoading(true)
+    Promise.all([
+      adminApi.getBusinessUsers(id),
+      adminApi.getOwnershipHistory(id).catch(() => []),
+    ])
+      .then(([users, history]) => {
+        setMembers(users || [])
+        setOwnershipHistory(history || [])
+      })
+      .catch((err) => setError(err.message || 'Failed to load users'))
+      .finally(() => setOwnershipLoading(false))
+  }
+
+  useEffect(() => {
+    if (activeTab !== 'ownership') return
+    loadOwnership()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, id])
+
+  const handleAddUser = async (e) => {
+    e.preventDefault()
+    setOwnershipBusy(true)
+    setError('')
+    try {
+      const member = await adminApi.addBusinessUser(id, addUserForm)
+      const makeOwner = Boolean(addUserForm.makeOwner)
+      setAddUserForm({ name: '', email: '', password: '', role: 'member', makeOwner: false })
+      if (makeOwner && member?.id) {
+        await adminApi.changeBusinessOwner(id, { memberId: member.id })
+        const biz = await adminApi.getBusiness(id)
+        setBusiness(biz)
+        setSuccess('User added and set as primary owner')
+      } else {
+        setSuccess('User added')
+      }
+      loadOwnership()
+    } catch (err) {
+      setError(err.message || 'Failed to add user')
+    } finally {
+      setOwnershipBusy(false)
+    }
+  }
+
+  const handleChangeOwner = async (memberId, name) => {
+    if (!window.confirm(`Make ${name || 'this user'} the primary owner?`)) return
+    setOwnershipBusy(true)
+    try {
+      await adminApi.changeBusinessOwner(id, { memberId })
+      setSuccess('Owner updated')
+      const biz = await adminApi.getBusiness(id)
+      setBusiness(biz)
+      loadOwnership()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setOwnershipBusy(false)
+    }
+  }
+
+  const handleMemberAction = async (memberId, data) => {
+    setOwnershipBusy(true)
+    try {
+      if (data.remove) await adminApi.removeBusinessUser(id, memberId)
+      else await adminApi.updateBusinessUser(id, memberId, data)
+      loadOwnership()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setOwnershipBusy(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!business) return
@@ -233,6 +325,13 @@ export default function BusinessDetailPage() {
             >
               Listing: {business.status || 'published'}
             </span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                business.claimed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {business.claimed ? '✓ Claimed' : 'Unclaimed'}
+            </span>
           </div>
         </div>
       </div>
@@ -290,8 +389,253 @@ export default function BusinessDetailPage() {
             </span>
           ) : null}
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('ownership')}
+          className={`shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium transition ${
+            activeTab === 'ownership'
+              ? 'border-primary-600 text-primary-700'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          Users & Ownership
+        </button>
         </div>
       </div>
+
+      {activeTab === 'ownership' ? (
+        <div className="space-y-6">
+          {ownershipLoading ? <LoadingSpinner /> : null}
+          {!ownershipLoading ? (
+            <>
+              <div className="rounded-2xl border border-primary-200 bg-primary-50/50 p-5">
+                <h3 className="text-base font-semibold text-slate-900">Change primary owner</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  The primary owner has full dashboard access. There can only be one primary owner.
+                </p>
+                {(() => {
+                  const candidates = members.filter((m) => !m.is_primary_owner && m.status === 'active')
+                  if (!canWrite) {
+                    return <p className="mt-3 text-sm text-slate-500">Viewer accounts cannot change ownership.</p>
+                  }
+                  if (candidates.length === 0) {
+                    return (
+                      <p className="mt-3 text-sm text-amber-800">
+                        No other active users yet. Use <strong>Add user</strong> below (tick “Make primary owner”
+                        if you want), then you can change ownership here.
+                      </p>
+                    )
+                  }
+                  return (
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <label className="min-w-0 flex-1">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          New owner
+                        </span>
+                        <select
+                          className="mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm"
+                          value={selectedOwnerMemberId}
+                          onChange={(e) => setSelectedOwnerMemberId(e.target.value)}
+                        >
+                          <option value="">Select a user…</option>
+                          {candidates.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name || m.email} ({m.email})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={ownershipBusy || !selectedOwnerMemberId}
+                        className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                        onClick={async () => {
+                          const m = candidates.find((c) => String(c.id) === String(selectedOwnerMemberId))
+                          await handleChangeOwner(selectedOwnerMemberId, m?.name || m?.email)
+                          setSelectedOwnerMemberId('')
+                        }}
+                      >
+                        Change Owner
+                      </button>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Role</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.map((member) => (
+                      <tr key={member.id} className="border-t border-border">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-slate-900">
+                            {member.is_primary_owner ? '👑 ' : ''}
+                            {member.name || member.email}
+                          </p>
+                          <p className="text-xs text-slate-500">{member.email}</p>
+                        </td>
+                        <td className="px-4 py-3 capitalize">
+                          {member.is_primary_owner ? 'Owner' : member.role}
+                        </td>
+                        <td className="px-4 py-3 capitalize">{member.status}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            {!member.is_primary_owner && member.status === 'active' ? (
+                              <button
+                                type="button"
+                                disabled={ownershipBusy || !canWrite}
+                                className="text-xs font-medium text-primary-700 hover:underline disabled:opacity-50"
+                                onClick={() => handleChangeOwner(member.id, member.name || member.email)}
+                              >
+                                Make owner
+                              </button>
+                            ) : null}
+                            {!member.is_primary_owner ? (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={ownershipBusy || !canWrite}
+                                  className="text-xs font-medium text-slate-700 hover:underline disabled:opacity-50"
+                                  onClick={() =>
+                                    handleMemberAction(member.id, {
+                                      status: member.status === 'disabled' ? 'active' : 'disabled',
+                                    })
+                                  }
+                                >
+                                  {member.status === 'disabled' ? 'Reactivate' : 'Disable'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={ownershipBusy || !canWrite}
+                                  className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                                  onClick={() => handleMemberAction(member.id, { remove: true })}
+                                >
+                                  Remove
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-xs text-slate-400">Primary owner</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {members.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                          No users found
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+
+              {canWrite ? (
+                <form
+                  onSubmit={handleAddUser}
+                  className="card space-y-4 p-5"
+                  autoComplete="off"
+                >
+                  <h3 className="text-base font-semibold text-slate-900">Add user</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input
+                      className="rounded-xl border border-border px-3 py-2 text-sm"
+                      placeholder="Full name"
+                      name="business_member_name"
+                      autoComplete="off"
+                      required
+                      value={addUserForm.name}
+                      onChange={(e) => setAddUserForm((p) => ({ ...p, name: e.target.value }))}
+                    />
+                    <input
+                      className="rounded-xl border border-border px-3 py-2 text-sm"
+                      placeholder="Email"
+                      name="business_member_email"
+                      type="email"
+                      autoComplete="off"
+                      required
+                      value={addUserForm.email}
+                      onChange={(e) => setAddUserForm((p) => ({ ...p, email: e.target.value }))}
+                    />
+                    <div className="relative">
+                      <input
+                        className="w-full rounded-xl border border-border px-3 py-2 pr-10 text-sm"
+                        placeholder="Password"
+                        name="business_member_password"
+                        type={showAddUserPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                        value={addUserForm.password}
+                        onChange={(e) => setAddUserForm((p) => ({ ...p, password: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-800"
+                        onClick={() => setShowAddUserPassword((v) => !v)}
+                        aria-label={showAddUserPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showAddUserPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <select
+                      className="rounded-xl border border-border px-3 py-2 text-sm"
+                      value={addUserForm.role}
+                      onChange={(e) => setAddUserForm((p) => ({ ...p, role: e.target.value }))}
+                    >
+                      <option value="member">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={addUserForm.makeOwner}
+                      onChange={(e) => setAddUserForm((p) => ({ ...p, makeOwner: e.target.checked }))}
+                    />
+                    Make this user the primary owner
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={ownershipBusy}
+                    className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    Add User
+                  </button>
+                </form>
+              ) : null}
+
+              <div className="card p-5">
+                <h3 className="text-base font-semibold text-slate-900">Claim / ownership history</h3>
+                <ul className="mt-4 space-y-3">
+                  {ownershipHistory.length === 0 ? (
+                    <li className="text-sm text-slate-500">No history yet</li>
+                  ) : (
+                    ownershipHistory.map((event) => (
+                      <li key={event.id} className="border-b border-border pb-3 text-sm last:border-0">
+                        <p className="font-medium text-slate-800">{event.event_type.replace(/_/g, ' ')}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {event.note || '—'} · {formatDate(event.created_at)}
+                          {event.performed_by_name ? ` · by ${event.performed_by_name}` : ''}
+                        </p>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {activeTab === 'reviews' ? (
         <div className="space-y-4">

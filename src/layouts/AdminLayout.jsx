@@ -33,6 +33,7 @@ const sidebarLinks = [
   { to: '/staff', label: 'CRM Team', icon: Shield },
   { to: '/businesses', label: 'Businesses', icon: Building2, end: true },
   { to: '/pending-businesses', label: 'Pending businesses', icon: AlertTriangle, badgeKey: 'pendingBusinesses' },
+  { to: '/claims', label: 'Claim requests', icon: Shield, badgeKey: 'pendingClaims' },
   { to: '/categories', label: 'Categories', icon: FolderTree },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
   { to: '/flagged', label: 'Pending reviews', icon: AlertTriangle, badgeKey: 'pendingReviews' },
@@ -109,6 +110,7 @@ function AdminShell({ setHeaderSlot }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [navBadges, setNavBadges] = useState({
     pendingBusinesses: 0,
+    pendingClaims: 0,
     pendingReviews: 0,
     openReports: 0,
   })
@@ -131,6 +133,7 @@ function AdminShell({ setHeaderSlot }) {
       const openReports = Array.isArray(reports) ? reports.filter((r) => r.status === 'open').length : 0
       setNavBadges({
         pendingBusinesses: Number(stats?.pendingBusinesses) || 0,
+        pendingClaims: Number(stats?.pendingClaims) || 0,
         pendingReviews: Number(stats?.flaggedReviews) || 0,
         openReports,
       })
