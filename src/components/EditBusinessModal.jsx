@@ -118,6 +118,9 @@ function buildForm(business, categoryTree) {
     firstName,
     lastName,
     owner_email: business?.owner_email || '',
+    seo_title: business?.seo_title || '',
+    seo_description: business?.seo_description || '',
+    seo_keywords: business?.seo_keywords || '',
   }
 }
 
@@ -251,6 +254,9 @@ Job title: ${form.jobTitle.trim() || '—'}
 Annual revenue: ${form.annualRevenue || '—'}
 Employees: ${form.employeeCount || '—'}
 Contact: ${ownerName || '—'}`.trim(),
+        seo_title: form.seo_title.trim() || null,
+        seo_description: form.seo_description.trim() || null,
+        seo_keywords: form.seo_keywords.trim() || null,
       }
 
       const updated = await adminApi.updateBusiness(currentBusiness.id, payload)
@@ -596,6 +602,52 @@ Contact: ${ownerName || '—'}`.trim(),
                   value={form.owner_email}
                   onChange={update('owner_email')}
                 />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-800">SEO / meta tags</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Optional overrides for this business profile page. Leave blank to use automatic title and description.
+              </p>
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label htmlFor="edit-seo-title" className="label-text">
+                    SEO title
+                  </label>
+                  <input
+                    id="edit-seo-title"
+                    className="input-field mt-1"
+                    value={form.seo_title}
+                    onChange={update('seo_title')}
+                    placeholder="e.g. Nexxo Digital Reviews | Check A Review"
+                    maxLength={255}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-seo-description" className="label-text">
+                    Meta description
+                  </label>
+                  <textarea
+                    id="edit-seo-description"
+                    className="input-field mt-1 min-h-[88px]"
+                    value={form.seo_description}
+                    onChange={update('seo_description')}
+                    placeholder="Short description for Google results"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-seo-keywords" className="label-text">
+                    Keywords
+                  </label>
+                  <input
+                    id="edit-seo-keywords"
+                    className="input-field mt-1"
+                    value={form.seo_keywords}
+                    onChange={update('seo_keywords')}
+                    placeholder="company reviews, brand name reviews, …"
+                  />
+                </div>
               </div>
             </div>
           </div>

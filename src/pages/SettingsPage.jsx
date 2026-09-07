@@ -26,6 +26,9 @@ export default function SettingsPage() {
     domainDnsCheck: true,
     emailProvider: 'sendgrid',
     logoUrl: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: '',
   })
   const [featuredIds, setFeaturedIds] = useState(padFeaturedIds())
   const [featuredSearch, setFeaturedSearch] = useState('')
@@ -47,6 +50,9 @@ export default function SettingsPage() {
       domainDnsCheck: data.domain_dns_check_enabled ?? true,
       emailProvider: data.email_provider || 'sendgrid',
       logoUrl: data.logo_url || '',
+      seoTitle: data.seo_title || '',
+      seoDescription: data.seo_description || '',
+      seoKeywords: data.seo_keywords || '',
     })
     setFeaturedIds(padFeaturedIds(data.featured_business_ids))
   }
@@ -102,6 +108,9 @@ export default function SettingsPage() {
         domainDnsCheck: settings.domainDnsCheck,
         emailProvider: settings.emailProvider,
         featuredBusinessIds: featuredIds.filter(Boolean),
+        seoTitle: settings.seoTitle.trim() || null,
+        seoDescription: settings.seoDescription.trim() || null,
+        seoKeywords: settings.seoKeywords.trim() || null,
       })
       applySettings(updated)
       setMessage('Settings saved successfully')
@@ -214,6 +223,47 @@ export default function SettingsPage() {
         <div>
           <label htmlFor="emailProvider" className="label-text text-slate-700">Email Provider</label>
           <input id="emailProvider" className="input-field bg-slate-50 text-slate-600" value="SendGrid" readOnly />
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-800">Homepage / brand SEO</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Used on the public homepage for brand searches like “check a review”, “company reviews”, etc.
+          </p>
+          <div className="mt-4 space-y-3">
+            <div>
+              <label htmlFor="seoTitle" className="label-text text-slate-700">SEO title</label>
+              <input
+                id="seoTitle"
+                type="text"
+                value={settings.seoTitle}
+                onChange={(e) => setSettings({ ...settings, seoTitle: e.target.value })}
+                className="input-field"
+                maxLength={255}
+                placeholder="Check A Review | Trusted customer reviews & business ratings"
+              />
+            </div>
+            <div>
+              <label htmlFor="seoDescription" className="label-text text-slate-700">Meta description</label>
+              <textarea
+                id="seoDescription"
+                value={settings.seoDescription}
+                onChange={(e) => setSettings({ ...settings, seoDescription: e.target.value })}
+                className="input-field min-h-[88px]"
+              />
+            </div>
+            <div>
+              <label htmlFor="seoKeywords" className="label-text text-slate-700">Keywords</label>
+              <input
+                id="seoKeywords"
+                type="text"
+                value={settings.seoKeywords}
+                onChange={(e) => setSettings({ ...settings, seoKeywords: e.target.value })}
+                className="input-field"
+                placeholder="check a review, company reviews, business reviews, …"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
