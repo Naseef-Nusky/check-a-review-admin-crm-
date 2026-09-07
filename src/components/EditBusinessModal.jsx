@@ -608,7 +608,8 @@ Contact: ${ownerName || '—'}`.trim(),
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <h3 className="text-sm font-semibold text-slate-800">SEO / meta tags</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Optional overrides for this business profile page. Leave blank to use automatic title and description.
+                SEO title is created automatically as &quot;{'{Business}'} Reviews | Check A Review&quot;.
+                Leave fields blank to keep automatic values, or override any of them.
               </p>
               <div className="mt-4 space-y-3">
                 <div>
@@ -620,7 +621,11 @@ Contact: ${ownerName || '—'}`.trim(),
                     className="input-field mt-1"
                     value={form.seo_title}
                     onChange={update('seo_title')}
-                    placeholder="e.g. Nexxo Digital Reviews | Check A Review"
+                    placeholder={
+                      form.name.trim()
+                        ? `${form.name.trim()} Reviews | Check A Review`
+                        : 'Auto: Business Reviews | Check A Review'
+                    }
                     maxLength={255}
                   />
                 </div>
