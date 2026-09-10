@@ -129,10 +129,11 @@ export default function CategoriesPage() {
     setSubmitError('')
   }
 
-  const startEditSub = (sub) => {
+  const startEditSub = (mainId, sub) => {
     setEditingSubId(sub.id)
     setEditingSubName(sub.name)
     setEditingMainId(null)
+    setExpanded((prev) => ({ ...prev, [mainId]: true }))
     setSubmitError('')
   }
 
@@ -346,41 +347,32 @@ export default function CategoriesPage() {
               return (
                 <div key={main.id}>
                   <div className="flex items-center gap-2 px-4 py-4 hover:bg-gray-50">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(main.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                    >
-                      {isOpen ? (
-                        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      {isEditingMain ? (
+                    {isEditingMain ? (
+                      <>
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </span>
                         <input
-                          className="input-field"
+                          className="input-field min-w-0 flex-1"
                           value={editingMainName}
                           onChange={(e) => setEditingMainName(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              saveMain(main.id)
+                            }
+                            if (e.key === 'Escape') {
+                              e.preventDefault()
+                              cancelEdit()
+                            }
+                          }}
                           autoFocus
                         />
-                      ) : (
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-900">{main.name}</p>
-                          <p className="text-sm text-slate-500">
-                            {main.subcategories.length} subcategories · {main.count} businesses
-                          </p>
-                        </div>
-                      )}
-                    </button>
-
-                    <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      {isEditingMain ? (
-                        <>
+                        <div className="flex shrink-0 items-center gap-2">
                           <button
                             type="button"
                             className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-                            disabled={savingId === main.id}
+                            disabled={savingId === main.id || !editingMainName.trim()}
                             onClick={() => saveMain(main.id)}
                           >
                             {savingId === main.id ? 'Saving...' : 'Save'}
@@ -389,12 +381,32 @@ export default function CategoriesPage() {
                             type="button"
                             className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
                             onClick={cancelEdit}
+                            disabled={savingId === main.id}
                           >
                             Cancel
                           </button>
-                        </>
-                      ) : (
-                        <>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(main.id)}
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        >
+                          {isOpen ? (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900">{main.name}</p>
+                            <p className="text-sm text-slate-500">
+                              {main.subcategories.length} subcategories · {main.count} businesses
+                            </p>
+                          </div>
+                        </button>
+                        <div className="flex shrink-0 items-center gap-2">
                           <button
                             type="button"
                             className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50"
@@ -412,9 +424,9 @@ export default function CategoriesPage() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </>
-                      )}
-                    </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {isOpen && (
@@ -441,6 +453,16 @@ export default function CategoriesPage() {
                                         className="input-field max-w-md"
                                         value={editingSubName}
                                         onChange={(e) => setEditingSubName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            saveSub(sub.id)
+                                          }
+                                          if (e.key === 'Escape') {
+                                            e.preventDefault()
+                                            cancelEdit()
+                                          }
+                                        }}
                                         autoFocus
                                       />
                                     ) : (
@@ -455,7 +477,7 @@ export default function CategoriesPage() {
                                           <button
                                             type="button"
                                             className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-                                            disabled={savingId === sub.id}
+                                            disabled={savingId === sub.id || !editingSubName.trim()}
                                             onClick={() => saveSub(sub.id)}
                                           >
                                             {savingId === sub.id ? 'Saving...' : 'Save'}
@@ -474,7 +496,7 @@ export default function CategoriesPage() {
                                             type="button"
                                             className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50"
                                             title="Edit subcategory"
-                                            onClick={() => startEditSub(sub)}
+                                            onClick={() => startEditSub(main.id, sub)}
                                           >
                                             <Pencil className="h-4 w-4" />
                                           </button>
