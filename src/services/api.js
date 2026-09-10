@@ -89,6 +89,7 @@ export const adminApi = {
   updateBusinessUser: (id, memberId, data) => api.patch(`/admin/businesses/${id}/users/${memberId}`, data),
   removeBusinessUser: (id, memberId) => api.delete(`/admin/businesses/${id}/users/${memberId}`),
   changeBusinessOwner: (id, data) => api.post(`/admin/businesses/${id}/change-owner`, data),
+  unclaimBusiness: (id, data = {}) => api.post(`/admin/businesses/${id}/unclaim`, data),
   getOwnershipHistory: (id) => api.get(`/admin/businesses/${id}/ownership-history`),
   getSubscriptions: () => api.get('/admin/subscriptions'),
   getPayments: () => api.get('/admin/payments'),

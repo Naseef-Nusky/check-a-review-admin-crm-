@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Building2, CheckCheck, MessageSquare, X } from 'lucide-react'
 import { adminApi } from '../services/api'
@@ -33,19 +33,24 @@ function NotificationIcon({ type }) {
 }
 
 export function NotificationBell({ onClick, unreadCount = 0 }) {
+  const showBadge = Number(unreadCount) > 0
   return (
     <button
       type="button"
       onClick={onClick}
       className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white"
-      aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+      aria-label={showBadge ? `Notifications, ${unreadCount} unread` : 'Notifications'}
     >
       <Bell className="h-5 w-5" strokeWidth={1.5} />
-      {unreadCount > 0 ? (
-        <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[10px] font-semibold leading-none text-white">
-          {unreadCount > 9 ? '9+' : unreadCount}
-        </span>
-      ) : null}
+      {/* Keep badge node mounted to avoid mount/unmount blink while count polls */}
+      <span
+        className={`absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[10px] font-semibold leading-none text-white transition-opacity ${
+          showBadge ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        aria-hidden={!showBadge}
+      >
+        {unreadCount > 9 ? '9+' : unreadCount || ''}
+      </span>
     </button>
   )
 }
@@ -54,25 +59,43 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
+  const onUnreadChangeRef = useRef(onUnreadChange)
+  const onCloseRef = useRef(onClose)
+  const hasLoadedRef = useRef(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await adminApi.getNotifications()
-      setItems(data || [])
-      onUnreadChange?.((data || []).filter((n) => !n.read).length)
-    } catch {
-      setItems([])
-    } finally {
-      setLoading(false)
-    }
+  useEffect(() => {
+    onUnreadChangeRef.current = onUnreadChange
   }, [onUnreadChange])
 
   useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  const load = useCallback(async ({ silent = false } = {}) => {
+    // Only show the full-page Loading state on the first fetch.
+    // Later refreshes keep the list visible so the panel doesn't blink.
+    if (!silent && !hasLoadedRef.current) {
+      setLoading(true)
+    }
+    try {
+      const data = await adminApi.getNotifications()
+      const list = data || []
+      setItems(list)
+      hasLoadedRef.current = true
+      onUnreadChangeRef.current?.(list.filter((n) => !n.read).length)
+    } catch {
+      if (!hasLoadedRef.current) setItems([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!open) return undefined
-    load()
+    // Load once when the panel opens — do not re-run on parent re-renders.
+    void load({ silent: hasLoadedRef.current })
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current?.()
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
@@ -80,7 +103,7 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
     }
-  }, [open, onClose, load])
+  }, [open, load])
 
   const unreadCount = items.filter((n) => !n.read).length
 
@@ -88,7 +111,7 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
     try {
       await adminApi.markAllNotificationsRead()
       setItems((prev) => prev.map((n) => ({ ...n, read: true })))
-      onUnreadChange?.(0)
+      onUnreadChangeRef.current?.(0)
     } catch {
       // keep current state
     }
@@ -99,12 +122,12 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
       if (!notif.read) {
         await adminApi.markNotificationRead(notif.id)
         setItems((prev) => prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)))
-        onUnreadChange?.(Math.max(0, unreadCount - 1))
+        onUnreadChangeRef.current?.(Math.max(0, unreadCount - 1))
       }
     } catch {
       // still navigate
     }
-    onClose()
+    onCloseRef.current?.()
     if (notif.link) navigate(notif.link)
   }
 
@@ -116,7 +139,7 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
         type="button"
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
         aria-label="Close notifications"
-        onClick={onClose}
+        onClick={() => onCloseRef.current?.()}
       />
 
       <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl ring-1 ring-slate-900/5">
@@ -140,7 +163,7 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
             ) : null}
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onCloseRef.current?.()}
               className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               aria-label="Close"
             >
@@ -150,7 +173,7 @@ export default function NotificationPanel({ open, onClose, onUnreadChange }) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {loading && items.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-slate-500">Loading...</p>
           ) : items.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-6 text-center">

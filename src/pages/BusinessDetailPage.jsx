@@ -192,6 +192,31 @@ export default function BusinessDetailPage() {
     }
   }
 
+  const handleUnclaim = async () => {
+    if (!business?.claimed) return
+    const confirmed = window.confirm(
+      `Unclaim "${business.name}"?\n\nThis marks the listing as unclaimed so someone else can submit a claim. Open claim requests will be closed. The current owner account is kept for CRM continuity.`,
+    )
+    if (!confirmed) return
+
+    setOwnershipBusy(true)
+    setError('')
+    try {
+      await adminApi.unclaimBusiness(id, {
+        note: 'Unclaimed by admin from CRM business detail',
+      })
+      const biz = await adminApi.getBusiness(id)
+      setBusiness(biz)
+      setSuccess('Business is now unclaimed and open for a new claim request')
+      loadOwnership()
+      requestCrmBadgesRefresh()
+    } catch (err) {
+      setError(err.message || 'Failed to unclaim business')
+    } finally {
+      setOwnershipBusy(false)
+    }
+  }
+
   const handleMemberAction = async (memberId, data) => {
     setOwnershipBusy(true)
     try {
@@ -408,6 +433,38 @@ export default function BusinessDetailPage() {
           {ownershipLoading ? <LoadingSpinner /> : null}
           {!ownershipLoading ? (
             <>
+              <div
+                className={`rounded-2xl border p-5 ${
+                  business.claimed
+                    ? 'border-emerald-200 bg-emerald-50/60'
+                    : 'border-slate-200 bg-slate-50'
+                }`}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">Claim status</h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {business.claimed
+                        ? 'This listing is claimed. Unclaim it to allow a new public claim request.'
+                        : 'This listing is unclaimed. Anyone can submit a claim from the public site.'}
+                    </p>
+                  </div>
+                  {business.claimed && canWrite ? (
+                    <button
+                      type="button"
+                      disabled={ownershipBusy}
+                      onClick={handleUnclaim}
+                      className="rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-medium text-amber-900 hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      Unclaim business
+                    </button>
+                  ) : null}
+                  {!canWrite && business.claimed ? (
+                    <p className="text-sm text-slate-500">Viewer accounts cannot unclaim businesses.</p>
+                  ) : null}
+                </div>
+              </div>
+
               <div className="rounded-2xl border border-primary-200 bg-primary-50/50 p-5">
                 <h3 className="text-base font-semibold text-slate-900">Change primary owner</h3>
                 <p className="mt-1 text-sm text-slate-600">

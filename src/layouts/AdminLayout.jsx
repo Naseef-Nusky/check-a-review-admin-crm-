@@ -118,7 +118,8 @@ function AdminShell({ setHeaderSlot }) {
   const refreshUnread = useCallback(async () => {
     try {
       const data = await adminApi.getUnreadNotificationCount()
-      setUnreadCount(data?.count || 0)
+      const next = data?.count || 0
+      setUnreadCount((prev) => (prev === next ? prev : next))
     } catch {
       // ignore polling errors
     }
@@ -131,12 +132,20 @@ function AdminShell({ setHeaderSlot }) {
         adminApi.getReports().catch(() => []),
       ])
       const openReports = Array.isArray(reports) ? reports.filter((r) => r.status === 'open').length : 0
-      setNavBadges({
+      const next = {
         pendingBusinesses: Number(stats?.pendingBusinesses) || 0,
         pendingClaims: Number(stats?.pendingClaims) || 0,
         pendingReviews: Number(stats?.flaggedReviews) || 0,
         openReports,
-      })
+      }
+      setNavBadges((prev) =>
+        prev.pendingBusinesses === next.pendingBusinesses &&
+        prev.pendingClaims === next.pendingClaims &&
+        prev.pendingReviews === next.pendingReviews &&
+        prev.openReports === next.openReports
+          ? prev
+          : next,
+      )
     } catch {
       // ignore polling errors
     }
@@ -159,6 +168,20 @@ function AdminShell({ setHeaderSlot }) {
       // ignore sync errors
     }
   }, [location.pathname, refreshUnread])
+
+  const handleNotificationsClose = useCallback(() => {
+    setNotificationsOpen(false)
+    refreshUnread()
+    refreshNavBadges()
+  }, [refreshUnread, refreshNavBadges])
+
+  const handleUnreadChange = useCallback(
+    (count) => {
+      setUnreadCount((prev) => (prev === count ? prev : count))
+      refreshNavBadges()
+    },
+    [refreshNavBadges],
+  )
 
   useEffect(() => {
     refreshUnread()
@@ -301,15 +324,8 @@ function AdminShell({ setHeaderSlot }) {
 
       <NotificationPanel
         open={notificationsOpen}
-        onClose={() => {
-          setNotificationsOpen(false)
-          refreshUnread()
-          refreshNavBadges()
-        }}
-        onUnreadChange={(count) => {
-          setUnreadCount(count)
-          refreshNavBadges()
-        }}
+        onClose={handleNotificationsClose}
+        onUnreadChange={handleUnreadChange}
       />
     </div>
   )
