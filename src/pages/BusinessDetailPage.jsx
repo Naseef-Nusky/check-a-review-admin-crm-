@@ -740,12 +740,22 @@ export default function BusinessDetailPage() {
                       {review.author_email ? ` · ${review.author_email}` : ''}
                     </p>
                   </div>
-                  <Link
-                    to={`/reviews/${review.id}`}
-                    className="text-sm font-medium text-primary-600 hover:underline"
-                  >
-                    Open review
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    {canWrite ? (
+                      <Link
+                        to={`/reviews/${review.id}`}
+                        className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Edit review
+                      </Link>
+                    ) : null}
+                    <Link
+                      to={`/reviews/${review.id}`}
+                      className="text-sm font-medium text-primary-600 hover:underline"
+                    >
+                      Open review
+                    </Link>
+                  </div>
                 </div>
 
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
@@ -753,9 +763,47 @@ export default function BusinessDetailPage() {
                 </p>
 
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Business owner reply
-                  </p>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Business owner reply
+                    </p>
+                    {canWrite && review.business_reply ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          to={`/reviews/${review.id}`}
+                          className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          Edit reply
+                        </Link>
+                        <button
+                          type="button"
+                          className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                          onClick={async () => {
+                            const note = window.prompt(
+                              'Reject / remove this business reply?\n\nOptional reason (sent to the business owner):',
+                              '',
+                            )
+                            if (note === null) return
+                            try {
+                              await adminApi.rejectReviewReply(review.id, note.trim() || undefined)
+                              setReviews((prev) =>
+                                prev.map((r) =>
+                                  r.id === review.id
+                                    ? { ...r, business_reply: null, business_reply_at: null }
+                                    : r,
+                                ),
+                              )
+                              setSuccess('Business reply rejected and removed')
+                            } catch (err) {
+                              setError(err.message || 'Failed to reject reply')
+                            }
+                          }}
+                        >
+                          Reject reply
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                   {review.business_reply ? (
                     <>
                       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
