@@ -767,40 +767,55 @@ export default function BusinessDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Business owner reply
                     </p>
-                    {canWrite && review.business_reply ? (
+                    {canWrite ? (
                       <div className="flex flex-wrap gap-2">
-                        <Link
-                          to={`/reviews/${review.id}`}
-                          className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          Edit reply
-                        </Link>
-                        <button
-                          type="button"
-                          className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                          onClick={async () => {
-                            const note = window.prompt(
-                              'Reject / remove this business reply?\n\nOptional reason (sent to the business owner):',
-                              '',
-                            )
-                            if (note === null) return
-                            try {
-                              await adminApi.rejectReviewReply(review.id, note.trim() || undefined)
-                              setReviews((prev) =>
-                                prev.map((r) =>
-                                  r.id === review.id
-                                    ? { ...r, business_reply: null, business_reply_at: null }
-                                    : r,
-                                ),
-                              )
-                              setSuccess('Business reply rejected and removed')
-                            } catch (err) {
-                              setError(err.message || 'Failed to reject reply')
-                            }
-                          }}
-                        >
-                          Reject reply
-                        </button>
+                        {review.business_reply ? (
+                          <>
+                            <Link
+                              to={`/reviews/${review.id}`}
+                              className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              Edit reply
+                            </Link>
+                            <button
+                              type="button"
+                              className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                              onClick={async () => {
+                                const confirmed = window.confirm(
+                                  'Delete this business reply?\n\nIt will be removed from the public review page.',
+                                )
+                                if (!confirmed) return
+                                const note = window.prompt(
+                                  'Optional reason for the business owner (leave blank to skip notifying them):',
+                                  '',
+                                )
+                                if (note === null) return
+                                try {
+                                  await adminApi.rejectReviewReply(review.id, note.trim() || undefined)
+                                  setReviews((prev) =>
+                                    prev.map((r) =>
+                                      r.id === review.id
+                                        ? { ...r, business_reply: null, business_reply_at: null }
+                                        : r,
+                                    ),
+                                  )
+                                  setSuccess('Business reply deleted')
+                                } catch (err) {
+                                  setError(err.message || 'Failed to delete reply')
+                                }
+                              }}
+                            >
+                              Delete reply
+                            </button>
+                          </>
+                        ) : (
+                          <Link
+                            to={`/reviews/${review.id}`}
+                            className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            Add reply
+                          </Link>
+                        )}
                       </div>
                     ) : null}
                   </div>

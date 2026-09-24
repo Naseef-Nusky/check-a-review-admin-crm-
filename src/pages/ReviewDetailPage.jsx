@@ -124,24 +124,30 @@ export default function ReviewDetailPage() {
       setReplyMessage('Reply text is required')
       return
     }
+    const wasNew = !review.business_reply
     setReplyBusy(true)
     setReplyMessage('')
     try {
       const updated = await adminApi.updateReviewReply(id, text)
       setReview((prev) => ({ ...prev, ...updated }))
       setEditingReply(false)
-      setReplyMessage('Reply updated')
+      setReplyMessage(wasNew ? 'Reply posted' : 'Reply updated')
     } catch (err) {
-      setReplyMessage(err.message || 'Failed to update reply')
+      setReplyMessage(err.message || 'Failed to save reply')
     } finally {
       setReplyBusy(false)
     }
   }
 
-  const rejectReply = async () => {
+  const deleteReply = async () => {
     if (!review.business_reply) return
+    const confirmed = window.confirm(
+      'Delete this business reply?\n\nIt will be removed from the public review page.',
+    )
+    if (!confirmed) return
+
     const note = window.prompt(
-      'Reject / remove this business reply?\n\nOptional reason (sent to the business owner):',
+      'Optional reason for the business owner (leave blank to skip notifying them):',
       '',
     )
     if (note === null) return
@@ -158,9 +164,9 @@ export default function ReviewDetailPage() {
       }))
       setReplyDraft('')
       setEditingReply(false)
-      setReplyMessage('Reply rejected and removed from public view')
+      setReplyMessage('Reply deleted')
     } catch (err) {
-      setReplyMessage(err.message || 'Failed to reject reply')
+      setReplyMessage(err.message || 'Failed to delete reply')
     } finally {
       setReplyBusy(false)
     }
@@ -326,14 +332,31 @@ export default function ReviewDetailPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Business owner reply
             </p>
-            {canWrite && review.business_reply && !editingReply ? (
+            {canWrite && !editingReply ? (
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="secondary" disabled={replyBusy} onClick={startEditReply}>
-                  Edit reply
-                </Button>
-                <Button size="sm" variant="danger" disabled={replyBusy} onClick={rejectReply}>
-                  Reject reply
-                </Button>
+                {review.business_reply ? (
+                  <>
+                    <Button size="sm" variant="secondary" disabled={replyBusy} onClick={startEditReply}>
+                      Edit reply
+                    </Button>
+                    <Button size="sm" variant="danger" disabled={replyBusy} onClick={deleteReply}>
+                      Delete reply
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={replyBusy}
+                    onClick={() => {
+                      setReplyDraft('')
+                      setEditingReply(true)
+                      setReplyMessage('')
+                    }}
+                  >
+                    Add reply
+                  </Button>
+                )}
               </div>
             ) : null}
           </div>
@@ -346,10 +369,15 @@ export default function ReviewDetailPage() {
                 onChange={(e) => setReplyDraft(e.target.value)}
                 maxLength={5000}
                 disabled={replyBusy}
+                placeholder="Write a public reply on behalf of the business…"
               />
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" disabled={replyBusy} onClick={saveReply}>
-                  {replyBusy ? 'Saving…' : 'Save reply'}
+                  {replyBusy
+                    ? 'Saving…'
+                    : review.business_reply
+                      ? 'Save reply'
+                      : 'Post reply'}
                 </Button>
                 <Button
                   size="sm"

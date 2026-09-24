@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Eye, MessageSquare, Plus, Search, X } from 'lucide-react'
+import { Check, Eye, MessageSquare, Plus, Search, Trash2, X } from 'lucide-react'
 import { adminApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
@@ -96,6 +96,24 @@ export default function ReviewsPage() {
       requestCrmBadgesRefresh()
     } catch (err) {
       alert(err.message)
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  const deleteReview = async (review) => {
+    const confirmed = window.confirm(
+      `Permanently delete this customer review?\n\n"${review.title || 'Untitled review'}"\n\nThis cannot be undone.`,
+    )
+    if (!confirmed) return
+
+    setActionId(review.id)
+    try {
+      await adminApi.deleteReview(review.id)
+      setReviews((prev) => prev.filter((r) => r.id !== review.id))
+      requestCrmBadgesRefresh()
+    } catch (err) {
+      alert(err.message || 'Failed to delete review')
     } finally {
       setActionId(null)
     }
@@ -257,6 +275,17 @@ export default function ReviewsPage() {
                     >
                       Reject
                     </TableActionButton>
+                    {canWrite ? (
+                      <TableActionButton
+                        variant="danger"
+                        icon={Trash2}
+                        disabled={actionId === review.id}
+                        onClick={() => deleteReview(review)}
+                        title="Delete review permanently"
+                      >
+                        Delete
+                      </TableActionButton>
+                    ) : null}
                   </TableActionsCell>
                 </tr>
               ))
