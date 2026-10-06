@@ -40,7 +40,7 @@ function DetailItem({ label, children }) {
 export default function BusinessDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { canWrite } = useAuth()
+  const { canWrite, canEditBusiness } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab =
     searchParams.get('tab') === 'reviews'
@@ -282,24 +282,28 @@ export default function BusinessDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to list
           </Link>
-          <button
-            type="button"
-            onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit
-          </button>
-          <button
-            type="button"
-            title="Remove"
-            aria-label="Remove business"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white p-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {canEditBusiness ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </button>
+              <button
+                type="button"
+                title="Remove"
+                aria-label="Remove business"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white p-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          ) : null}
         </div>
       </PageHeader>
 
@@ -361,7 +365,7 @@ export default function BusinessDetailPage() {
         </div>
       </div>
 
-      {business.status === 'pending' ? (
+      {business.status === 'pending' && canEditBusiness ? (
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p className="text-sm text-amber-900">This listing is waiting for approval before it appears publicly.</p>
           <div className="action-row">
@@ -449,7 +453,7 @@ export default function BusinessDetailPage() {
                         : 'This listing is unclaimed. Anyone can submit a claim from the public site.'}
                     </p>
                   </div>
-                  {business.claimed && canWrite ? (
+                  {business.claimed && canEditBusiness ? (
                     <button
                       type="button"
                       disabled={ownershipBusy}
@@ -459,8 +463,8 @@ export default function BusinessDetailPage() {
                       Unclaim business
                     </button>
                   ) : null}
-                  {!canWrite && business.claimed ? (
-                    <p className="text-sm text-slate-500">Viewer accounts cannot unclaim businesses.</p>
+                  {!canEditBusiness && business.claimed ? (
+                    <p className="text-sm text-slate-500">Your role cannot unclaim businesses.</p>
                   ) : null}
                 </div>
               </div>
@@ -472,8 +476,8 @@ export default function BusinessDetailPage() {
                 </p>
                 {(() => {
                   const candidates = members.filter((m) => !m.is_primary_owner && m.status === 'active')
-                  if (!canWrite) {
-                    return <p className="mt-3 text-sm text-slate-500">Viewer accounts cannot change ownership.</p>
+                  if (!canEditBusiness) {
+                    return <p className="mt-3 text-sm text-slate-500">Your role cannot change ownership.</p>
                   }
                   if (candidates.length === 0) {
                     return (
@@ -548,7 +552,7 @@ export default function BusinessDetailPage() {
                             {!member.is_primary_owner && member.status === 'active' ? (
                               <button
                                 type="button"
-                                disabled={ownershipBusy || !canWrite}
+                                disabled={ownershipBusy || !canEditBusiness}
                                 className="text-xs font-medium text-primary-700 hover:underline disabled:opacity-50"
                                 onClick={() => handleChangeOwner(member.id, member.name || member.email)}
                               >
@@ -559,7 +563,7 @@ export default function BusinessDetailPage() {
                               <>
                                 <button
                                   type="button"
-                                  disabled={ownershipBusy || !canWrite}
+                                  disabled={ownershipBusy || !canEditBusiness}
                                   className="text-xs font-medium text-slate-700 hover:underline disabled:opacity-50"
                                   onClick={() =>
                                     handleMemberAction(member.id, {
@@ -571,7 +575,7 @@ export default function BusinessDetailPage() {
                                 </button>
                                 <button
                                   type="button"
-                                  disabled={ownershipBusy || !canWrite}
+                                  disabled={ownershipBusy || !canEditBusiness}
                                   className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
                                   onClick={() => handleMemberAction(member.id, { remove: true })}
                                 >
@@ -596,7 +600,7 @@ export default function BusinessDetailPage() {
                 </table>
               </div>
 
-              {canWrite ? (
+              {canEditBusiness ? (
                 <form
                   onSubmit={handleAddUser}
                   className="card space-y-4 p-5"
@@ -988,17 +992,19 @@ export default function BusinessDetailPage() {
         </div>
       )}
 
-      <EditBusinessModal
-        open={editOpen}
-        business={business}
-        categoryTree={categoryTree}
-        onClose={() => setEditOpen(false)}
-        onSaved={(updated) => {
-          setBusiness((prev) => ({ ...prev, ...updated }))
-          setSuccess('Business updated successfully')
-          setEditOpen(false)
-        }}
-      />
+      {canEditBusiness ? (
+        <EditBusinessModal
+          open={editOpen}
+          business={business}
+          categoryTree={categoryTree}
+          onClose={() => setEditOpen(false)}
+          onSaved={(updated) => {
+            setBusiness((prev) => ({ ...prev, ...updated }))
+            setSuccess('Business updated successfully')
+            setEditOpen(false)
+          }}
+        />
+      ) : null}
 
       <CreateReviewModal
         open={createReviewOpen}

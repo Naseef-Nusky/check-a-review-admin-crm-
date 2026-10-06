@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { LockKeyhole } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { adminApi, ApiError } from '../services/api'
-import { isCrmRole } from '../utils/constants'
+import { isCrmRole, businessAreaHomePath } from '../utils/constants'
 import Button from '../components/Button'
 import PasswordInput from '../components/PasswordInput'
 import DomainEmailInput, { toCrmEmail } from '../components/DomainEmailInput'
@@ -30,7 +30,7 @@ export default function LoginPage() {
       }
 
       login(user, token)
-      navigate('/')
+      navigate(businessAreaHomePath(user.role))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
     } finally {

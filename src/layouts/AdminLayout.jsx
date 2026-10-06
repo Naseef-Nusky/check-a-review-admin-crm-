@@ -57,10 +57,10 @@ function formatBadgeCount(count) {
   return value > 99 ? '99+' : String(value)
 }
 
-function SidebarNav({ onNavigate, badges = {} }) {
+function SidebarNav({ onNavigate, badges = {}, links = sidebarLinks }) {
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-      {sidebarLinks.map((link) => {
+      {links.map((link) => {
         const badge = link.badgeKey ? formatBadgeCount(badges[link.badgeKey]) : null
         return (
           <NavLink
@@ -86,13 +86,16 @@ function SidebarNav({ onNavigate, badges = {} }) {
   )
 }
 
-function SidebarAccount({ user, isViewer, onLogout }) {
+function SidebarAccount({ user, isViewer, isBusinessesOnly, onLogout }) {
   return (
     <div className="shrink-0 border-t border-border p-4">
       <p className="truncate text-sm font-medium text-ink">{user?.name}</p>
       <p className="truncate text-xs text-ink-muted">{user?.email}</p>
       <p className="mt-1 text-xs font-medium text-primary-600">{crmRoleLabel(user?.role)}</p>
       {isViewer ? <p className="mt-1 text-xs text-slate-500">Read-only access</p> : null}
+      {isBusinessesOnly ? (
+        <p className="mt-1 text-xs text-slate-500">Businesses access only</p>
+      ) : null}
       <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={onLogout}>
         <LogOut className="h-4 w-4 stroke-[1.5]" strokeWidth={1.5} aria-hidden="true" />
         Logout
@@ -102,7 +105,7 @@ function SidebarAccount({ user, isViewer, onLogout }) {
 }
 
 function AdminShell({ setHeaderSlot }) {
-  const { user, logout, isViewer } = useAuth()
+  const { user, logout, isViewer, isBusinessesOnly } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -114,6 +117,18 @@ function AdminShell({ setHeaderSlot }) {
     pendingReviews: 0,
     openReports: 0,
   })
+
+  const visibleLinks = isBusinessesOnly
+    ? sidebarLinks.filter((link) => link.to === '/businesses')
+    : sidebarLinks
+  const homePath = isBusinessesOnly ? '/businesses' : '/'
+
+  useEffect(() => {
+    if (!isBusinessesOnly) return
+    if (!location.pathname.startsWith('/businesses')) {
+      navigate('/businesses', { replace: true })
+    }
+  }, [isBusinessesOnly, location.pathname, navigate])
 
   const refreshUnread = useCallback(async () => {
     try {
@@ -244,7 +259,7 @@ function AdminShell({ setHeaderSlot }) {
         <header className="sticky top-0 z-40 shrink-0 border-b border-slate-800" style={headerBg}>
           <div className="flex items-start gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-0">
             <div className="hidden w-72 shrink-0 items-center gap-3 border-r border-white/10 px-6 py-1 lg:flex">
-              <Link to="/" className="inline-flex shrink-0">
+              <Link to={homePath} className="inline-flex shrink-0">
                 <img src="/logo-check-a-review.png" alt="Check A Review" className="h-8 w-auto object-contain" />
               </Link>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">Admin CRM</p>
@@ -263,7 +278,7 @@ function AdminShell({ setHeaderSlot }) {
 
               <div className="min-w-0 flex-1">
                 <div className="mb-2 flex items-center gap-3 lg:hidden">
-                  <Link to="/" className="inline-flex shrink-0">
+                  <Link to={homePath} className="inline-flex shrink-0">
                     <img src="/logo-check-a-review.png" alt="Check A Review" className="h-7 w-auto object-contain" />
                   </Link>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-300">Admin CRM</p>
@@ -271,20 +286,27 @@ function AdminShell({ setHeaderSlot }) {
                 <div ref={setHeaderSlot} className="min-h-[3.5rem] sm:min-h-[4.5rem]" />
               </div>
 
-              <div className="shrink-0 pt-1">
-                <NotificationBell
-                  unreadCount={unreadCount}
-                  onClick={() => setNotificationsOpen(true)}
-                />
-              </div>
+              {!isBusinessesOnly ? (
+                <div className="shrink-0 pt-1">
+                  <NotificationBell
+                    unreadCount={unreadCount}
+                    onClick={() => setNotificationsOpen(true)}
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         </header>
 
         <div className="flex min-h-0 flex-1 lg:overflow-hidden">
           <aside className="hidden w-72 shrink-0 border-r border-border bg-white lg:flex lg:max-h-full lg:flex-col lg:overflow-hidden">
-            <SidebarNav badges={navBadges} />
-            <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
+            <SidebarNav links={visibleLinks} badges={navBadges} />
+            <SidebarAccount
+              user={user}
+              isViewer={isViewer}
+              isBusinessesOnly={isBusinessesOnly}
+              onLogout={handleLogout}
+            />
           </aside>
 
           <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:overflow-y-auto lg:p-8">
@@ -316,17 +338,28 @@ function AdminShell({ setHeaderSlot }) {
                 <X className="h-5 w-5" strokeWidth={1.5} />
               </button>
             </div>
-            <SidebarNav badges={navBadges} onNavigate={() => setMobileNavOpen(false)} />
-            <SidebarAccount user={user} isViewer={isViewer} onLogout={handleLogout} />
+            <SidebarNav
+              links={visibleLinks}
+              badges={navBadges}
+              onNavigate={() => setMobileNavOpen(false)}
+            />
+            <SidebarAccount
+              user={user}
+              isViewer={isViewer}
+              isBusinessesOnly={isBusinessesOnly}
+              onLogout={handleLogout}
+            />
           </aside>
         </div>
       ) : null}
 
-      <NotificationPanel
-        open={notificationsOpen}
-        onClose={handleNotificationsClose}
-        onUnreadChange={handleUnreadChange}
-      />
+      {!isBusinessesOnly ? (
+        <NotificationPanel
+          open={notificationsOpen}
+          onClose={handleNotificationsClose}
+          onUnreadChange={handleUnreadChange}
+        />
+      ) : null}
     </div>
   )
 }

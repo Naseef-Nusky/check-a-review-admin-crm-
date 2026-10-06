@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -67,6 +68,7 @@ function VerifyMark({ label, status }) {
 }
 
 export default function ClaimsPage() {
+  const { canWrite } = useAuth()
   const [claims, setClaims] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -88,6 +90,7 @@ export default function ClaimsPage() {
   const setNote = (id, value) => setNotes((prev) => ({ ...prev, [id]: value }))
 
   const review = async (id, action) => {
+    if (!canWrite) return
     setActionId(id)
     try {
       await adminApi.reviewClaim(id, { action, notes: notes[id] || undefined })
@@ -101,6 +104,7 @@ export default function ClaimsPage() {
   }
 
   const updateVerification = async (id, field, value) => {
+    if (!canWrite) return
     setActionId(id)
     try {
       await adminApi.updateClaimVerification(id, { [field]: value })
@@ -201,7 +205,7 @@ export default function ClaimsPage() {
                   <select
                     key={field}
                     className="rounded-lg border border-border bg-white px-2 py-1.5 text-xs"
-                    disabled={actionId === claim.id}
+                    disabled={!canWrite || actionId === claim.id}
                     defaultValue=""
                     onChange={(e) => {
                       if (!e.target.value) return
@@ -223,6 +227,7 @@ export default function ClaimsPage() {
                 placeholder="Admin notes (optional)"
                 value={notes[claim.id] || ''}
                 onChange={(e) => setNote(claim.id, e.target.value)}
+                disabled={!canWrite}
               />
 
               <div className="action-row mt-4">
@@ -232,31 +237,37 @@ export default function ClaimsPage() {
                 >
                   Open business
                 </Link>
-                <Button
-                  size="sm"
-                  disabled={actionId === claim.id || !claim.emailVerified}
-                  onClick={() => review(claim.id, 'approve')}
-                >
-                  Approve Claim
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={actionId === claim.id}
-                  onClick={() => review(claim.id, 'request_info')}
-                >
-                  Request More Information
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  disabled={actionId === claim.id}
-                  onClick={() => review(claim.id, 'reject')}
-                >
-                  Reject Claim
-                </Button>
+                {canWrite ? (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={actionId === claim.id || !claim.emailVerified}
+                      onClick={() => review(claim.id, 'approve')}
+                    >
+                      Approve Claim
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={actionId === claim.id}
+                      onClick={() => review(claim.id, 'request_info')}
+                    >
+                      Request More Information
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={actionId === claim.id}
+                      onClick={() => review(claim.id, 'reject')}
+                    >
+                      Reject Claim
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500">Your role cannot approve or reject claims.</p>
+                )}
               </div>
-              {!claim.emailVerified ? (
+              {canWrite && !claim.emailVerified ? (
                 <p className="mt-2 text-xs text-amber-700">Approve is available after the claimant verifies their email.</p>
               ) : null}
             </div>

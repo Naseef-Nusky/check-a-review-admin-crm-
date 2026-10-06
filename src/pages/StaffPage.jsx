@@ -64,7 +64,7 @@ export default function StaffPage() {
       name: member.name || '',
       emailLocal: crmEmailLocalPart(member.email),
       password: '',
-      role: member.role === 'viewer' ? 'viewer' : 'admin',
+      role: ['viewer', 'business_adder', 'admin'].includes(member.role) ? member.role : 'admin',
     })
     setFormError('')
     setModalOpen(true)
@@ -128,7 +128,7 @@ export default function StaffPage() {
     <div>
       <PageHeader
         title="CRM Team"
-        description="Create and edit Admin and Viewer accounts (super admin only)"
+        description="Create and edit Admin, Viewer, and Business Adder accounts (super admin only)"
       >
         {isSuperAdmin && (
           <button
@@ -144,7 +144,7 @@ export default function StaffPage() {
 
       {!isSuperAdmin && (
         <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Only the super admin can create or edit Admin and Viewer accounts.
+          Only the super admin can create or edit Admin, Viewer, and Business Adder accounts.
         </p>
       )}
 
@@ -178,7 +178,9 @@ export default function StaffPage() {
                           ? 'bg-fuchsia-100 text-fuchsia-800'
                           : member.role === 'admin'
                             ? 'bg-blue-100 text-blue-800'
-                            : 'bg-slate-100 text-slate-700'
+                            : member.role === 'business_adder'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-100 text-slate-700'
                       }`}
                     >
                       {crmRoleLabel(member.role)}
@@ -294,6 +296,7 @@ export default function StaffPage() {
                   className="input-field"
                 >
                   <option value="admin">Admin</option>
+                  <option value="business_adder">Business Adder</option>
                   <option value="viewer">Viewer</option>
                 </select>
               </div>

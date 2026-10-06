@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { businessAreaHomePath } from '../utils/constants'
 import AdminLayout from '../layouts/AdminLayout'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../pages/LoginPage'
@@ -24,13 +25,26 @@ import ReportsPage from '../pages/ReportsPage'
 import ClaimsPage from '../pages/ClaimsPage'
 
 function LoginRedirect() {
-  const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <LoginPage />
+  return <Navigate to={businessAreaHomePath(user?.role)} replace />
 }
 
 function BusinessEditRedirect() {
   const { id } = useParams()
   return <Navigate to={`/businesses/${id}`} replace />
+}
+
+function DefaultRedirect() {
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <Navigate to={businessAreaHomePath(user?.role)} replace />
+}
+
+function BusinessesOnlyGuard({ children }) {
+  const { isBusinessesOnly } = useAuth()
+  if (isBusinessesOnly) return <Navigate to="/businesses" replace />
+  return children
 }
 
 export default function AppRoutes() {
@@ -39,29 +53,141 @@ export default function AppRoutes() {
       <Route path="/login" element={<LoginRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="staff" element={<StaffPage />} />
+          <Route
+            index
+            element={
+              <BusinessesOnlyGuard>
+                <DashboardPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <BusinessesOnlyGuard>
+                <UsersPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="staff"
+            element={
+              <BusinessesOnlyGuard>
+                <StaffPage />
+              </BusinessesOnlyGuard>
+            }
+          />
           <Route path="businesses" element={<BusinessesPage />} />
           <Route path="businesses/:id" element={<BusinessDetailPage />} />
           <Route path="businesses/:id/edit" element={<BusinessEditRedirect />} />
-          <Route path="categories" element={<CategoriesPage />} />
-          <Route path="reviews" element={<ReviewsPage />} />
-          <Route path="reviews/:id" element={<ReviewDetailPage />} />
           <Route path="businesses/:id/reviews" element={<BusinessReviewsPage />} />
-          <Route path="flagged" element={<FlaggedReviewsPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="pending-businesses" element={<PendingBusinessesPage />} />
-          <Route path="claims" element={<ClaimsPage />} />
-          <Route path="subscriptions" element={<SubscriptionsPage />} />
-          <Route path="payments" element={<PaymentsPage />} />
-          <Route path="pricing" element={<PricingPage />} />
-          <Route path="billing-plans" element={<BillingPlansPage />} />
-          <Route path="widget-designs" element={<WidgetDesignsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route
+            path="categories"
+            element={
+              <BusinessesOnlyGuard>
+                <CategoriesPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="reviews"
+            element={
+              <BusinessesOnlyGuard>
+                <ReviewsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="reviews/:id"
+            element={
+              <BusinessesOnlyGuard>
+                <ReviewDetailPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="flagged"
+            element={
+              <BusinessesOnlyGuard>
+                <FlaggedReviewsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <BusinessesOnlyGuard>
+                <ReportsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="pending-businesses"
+            element={
+              <BusinessesOnlyGuard>
+                <PendingBusinessesPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="claims"
+            element={
+              <BusinessesOnlyGuard>
+                <ClaimsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="subscriptions"
+            element={
+              <BusinessesOnlyGuard>
+                <SubscriptionsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="payments"
+            element={
+              <BusinessesOnlyGuard>
+                <PaymentsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="pricing"
+            element={
+              <BusinessesOnlyGuard>
+                <PricingPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="billing-plans"
+            element={
+              <BusinessesOnlyGuard>
+                <BillingPlansPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="widget-designs"
+            element={
+              <BusinessesOnlyGuard>
+                <WidgetDesignsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <BusinessesOnlyGuard>
+                <SettingsPage />
+              </BusinessesOnlyGuard>
+            }
+          />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<DefaultRedirect />} />
     </Routes>
   )
 }

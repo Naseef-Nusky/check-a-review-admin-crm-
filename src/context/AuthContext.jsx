@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { adminApi } from '../services/api'
-import { isCrmRole, isSuperAdmin, isViewer } from '../utils/constants'
+import { isCrmRole, isSuperAdmin, isViewer, isBusinessAdder, canCrmWrite, canCrmCreateBusiness, isBusinessesOnlyRole } from '../utils/constants'
 
 const AuthContext = createContext(null)
 
@@ -66,7 +66,11 @@ export function AuthProvider({ children }) {
       isAuthenticated: !!user && isCrmRole(user.role),
       isSuperAdmin: !!user && isSuperAdmin(user.role),
       isViewer: !!user && isViewer(user.role),
-      canWrite: !!user && isCrmRole(user.role) && !isViewer(user.role),
+      isBusinessAdder: !!user && isBusinessAdder(user.role),
+      isBusinessesOnly: !!user && isBusinessesOnlyRole(user.role),
+      canWrite: !!user && canCrmWrite(user.role),
+      canCreateBusiness: !!user && canCrmCreateBusiness(user.role),
+      canEditBusiness: !!user && canCrmWrite(user.role),
     }),
     [user, login, logout, authReady],
   )

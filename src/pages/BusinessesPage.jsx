@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Ban, Eye, Globe, Pencil, Search, Trash2, X } from 'lucide-react'
 import { adminApi } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -45,6 +46,7 @@ function ListingToggleButton({ biz, busy, onToggle }) {
 }
 
 export default function BusinessesPage() {
+  const { canCreateBusiness, canEditBusiness } = useAuth()
   const [businesses, setBusinesses] = useState([])
   const [categoryTree, setCategoryTree] = useState([])
   const [loading, setLoading] = useState(true)
@@ -176,13 +178,15 @@ export default function BusinessesPage() {
   return (
     <div>
       <PageHeader title="Manage Businesses" description="View and manage business accounts">
-        <button
-          type="button"
-          onClick={() => setAddOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
-        >
-          + Add business
-        </button>
+        {canCreateBusiness ? (
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
+          >
+            + Add business
+          </button>
+        ) : null}
       </PageHeader>
 
       {actionError ? (
@@ -276,7 +280,7 @@ export default function BusinessesPage() {
       </div>
 
       <CreateBusinessWizard
-        open={addOpen}
+        open={addOpen && canCreateBusiness}
         onClose={() => setAddOpen(false)}
         categoryTree={categoryTree}
         createBusiness={async (payload, logoFile) => {
@@ -292,18 +296,20 @@ export default function BusinessesPage() {
         }}
       />
 
-      <EditBusinessModal
-        open={Boolean(editingBusiness)}
-        business={editingBusiness}
-        categoryTree={categoryTree}
-        onClose={() => setEditingBusiness(null)}
-        onSaved={(updated) => {
-          setBusinesses((prev) =>
-            prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
-          )
-          setEditingBusiness(null)
-        }}
-      />
+      {canEditBusiness ? (
+        <EditBusinessModal
+          open={Boolean(editingBusiness)}
+          business={editingBusiness}
+          categoryTree={categoryTree}
+          onClose={() => setEditingBusiness(null)}
+          onSaved={(updated) => {
+            setBusinesses((prev) =>
+              prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+            )
+            setEditingBusiness(null)
+          }}
+        />
+      ) : null}
 
       <div className="card table-scroll">
         <table className="data-table w-full min-w-[1180px] table-fixed">
@@ -416,27 +422,31 @@ export default function BusinessesPage() {
                     <TableIconButton to={`/businesses/${biz.id}`} title="View business">
                       <Eye className="h-4 w-4" />
                     </TableIconButton>
-                    <TableIconButton
-                      title="Edit business"
-                      onClick={() => setEditingBusiness(biz)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </TableIconButton>
-                    <ListingToggleButton
-                      biz={biz}
-                      busy={moderatingId === biz.id}
-                      onToggle={() =>
-                        handleModerate(biz, (biz.status || 'published') === 'published' ? 'pending' : 'published')
-                      }
-                    />
-                    <TableIconButton
-                      variant="danger"
-                      title="Remove business"
-                      disabled={deletingId === biz.id}
-                      onClick={() => handleDelete(biz)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </TableIconButton>
+                    {canEditBusiness ? (
+                      <>
+                        <TableIconButton
+                          title="Edit business"
+                          onClick={() => setEditingBusiness(biz)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </TableIconButton>
+                        <ListingToggleButton
+                          biz={biz}
+                          busy={moderatingId === biz.id}
+                          onToggle={() =>
+                            handleModerate(biz, (biz.status || 'published') === 'published' ? 'pending' : 'published')
+                          }
+                        />
+                        <TableIconButton
+                          variant="danger"
+                          title="Remove business"
+                          disabled={deletingId === biz.id}
+                          onClick={() => handleDelete(biz)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </TableIconButton>
+                      </>
+                    ) : null}
                   </TableActionsCell>
                 </tr>
               ))

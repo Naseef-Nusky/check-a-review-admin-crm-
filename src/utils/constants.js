@@ -7,7 +7,8 @@ export const REVIEW_STATUS = {
   REPORTED: 'reported',
 }
 
-export const CRM_ROLES = ['super_admin', 'admin', 'viewer']
+export const CRM_ROLES = ['super_admin', 'admin', 'viewer', 'business_adder']
+export const STAFF_CREATABLE_ROLES = ['admin', 'viewer', 'business_adder']
 
 export function isCrmRole(role) {
   return CRM_ROLES.includes(role)
@@ -21,10 +22,34 @@ export function isViewer(role) {
   return role === 'viewer'
 }
 
+export function isBusinessAdder(role) {
+  return role === 'business_adder'
+}
+
+/** Business Adder may only use the Businesses area of the CRM */
+export function isBusinessesOnlyRole(role) {
+  return role === 'business_adder'
+}
+
+export function businessAreaHomePath(role) {
+  return isBusinessesOnlyRole(role) ? '/businesses' : '/'
+}
+
+/** Full CRM writes (edit businesses, claims, reviews, etc.) */
+export function canCrmWrite(role) {
+  return role === 'super_admin' || role === 'admin'
+}
+
+/** Add new businesses (admins + business adder) */
+export function canCrmCreateBusiness(role) {
+  return canCrmWrite(role) || role === 'business_adder'
+}
+
 export function crmRoleLabel(role) {
   if (role === 'super_admin') return 'Super Admin'
   if (role === 'admin') return 'Admin'
   if (role === 'viewer') return 'Viewer'
+  if (role === 'business_adder') return 'Business Adder'
   return role
 }
 
